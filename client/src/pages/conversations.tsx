@@ -9,6 +9,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { VPNStatus } from "@/components/vpn-status";
+import { PresenceIndicator } from "@/components/presence-indicator";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Message } from "@shared/schema";
 
@@ -19,6 +20,7 @@ interface ConversationsProps {
   onLogout: () => void;
   onUserUpdate?: (updatedUser: Partial<UserType>) => void;
   onConversationRemoved?: () => void;
+  getUserPresenceStatus?: (userId: string) => 'online' | 'offline' | 'in-your-chat';
 }
 
 interface SearchUser {
@@ -30,7 +32,7 @@ interface SearchUser {
   location: string;
 }
 
-export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved }: ConversationsProps) {
+export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved, getUserPresenceStatus }: ConversationsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -214,11 +216,21 @@ export default function Conversations({ user, conversations, onSelectConversatio
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-3">
-                      <Avatar className="w-12 h-12 bg-blue-500">
-                        <AvatarFallback className="text-white font-semibold">
-                          {conversation.username.split('.').map(n => n[0].toUpperCase()).join('')}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="w-12 h-12 bg-blue-500">
+                          <AvatarFallback className="text-white font-semibold">
+                            {conversation.username.split('.').map(n => n[0].toUpperCase()).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        {getUserPresenceStatus && (
+                          <div className="absolute -bottom-1 -right-1">
+                            <PresenceIndicator 
+                              status={getUserPresenceStatus(conversation.userId)} 
+                              size="md"
+                            />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium text-card-foreground truncate">

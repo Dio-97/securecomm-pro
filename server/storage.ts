@@ -13,6 +13,14 @@ export interface IStorage {
   updateUserActivity(userId: string, realIp?: string): Promise<void>;
   rotateUserVPN(userId: string): Promise<User | undefined>;
   
+  // Presence management
+  setUserOnline(userId: string): Promise<void>;
+  setUserOffline(userId: string): Promise<void>;
+  isUserOnline(userId: string): boolean;
+  getUsersInChat(userId1: string, userId2: string): string[];
+  getUserPresenceStatus(userId: string, currentUserId: string, currentChatUserId?: string): 'online' | 'offline' | 'in-your-chat';
+  getAllOnlineUsers(): string[];
+  
   // Message management
   createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message>;
   getAllMessages(): Promise<Message[]>;
@@ -37,6 +45,7 @@ export class MemStorage implements IStorage {
   private invitations: Map<string, Invitation>;
   private savedConversations: Map<string, SavedConversation>;
   private activeConversations: Map<string, Set<string>>; // conversationId -> Set of active userIds
+  private onlineUsers: Set<string>; // Set of online user IDs
 
   constructor() {
     this.users = new Map();
@@ -44,6 +53,7 @@ export class MemStorage implements IStorage {
     this.invitations = new Map();
     this.savedConversations = new Map();
     this.activeConversations = new Map();
+    this.onlineUsers = new Set();
     
     // Start VPN load balancing
     vpnService.startLoadBalancing();
@@ -434,6 +444,45 @@ export class MemStorage implements IStorage {
 
   private generateRandomIP(): string {
     return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+  }
+
+  // Presence management methods
+  async setUserOnline(userId: string): Promise<void> {
+    this.onlineUsers.add(userId);
+  }
+
+  async setUserOffline(userId: string): Promise<void> {
+    this.onlineUsers.delete(userId);
+  }
+
+  isUserOnline(userId: string): boolean {
+    return this.onlineUsers.has(userId);
+  }
+
+  getUsersInChat(userId1: string, userId2: string): string[] {
+    const conversationId = this.getConversationId(userId1, userId2);
+    const activeUsers = this.activeConversations.get(conversationId);
+    return activeUsers ? Array.from(activeUsers) : [];
+  }
+
+  getUserPresenceStatus(userId: string, currentUserId: string, currentChatUserId?: string): 'online' | 'offline' | 'in-your-chat' {
+    if (!this.isUserOnline(userId)) {
+      return 'offline';
+    }
+    
+    // Check if user is in the same chat as current user
+    if (currentChatUserId && currentChatUserId === userId) {
+      const usersInChat = this.getUsersInChat(currentUserId, userId);
+      if (usersInChat.includes(userId) && usersInChat.includes(currentUserId)) {
+        return 'in-your-chat';
+      }
+    }
+    
+    return 'online';
+  }
+
+  getAllOnlineUsers(): string[] {
+    return Array.from(this.onlineUsers);
   }
 }
 

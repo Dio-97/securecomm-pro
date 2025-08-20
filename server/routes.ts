@@ -296,6 +296,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // WebSocket connection handling
+  // Send presence updates to all clients
+  const broadcastPresenceUpdate = (userId: string, status: 'online' | 'offline') => {
+    connectedClients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'presence_update',
+          userId,
+          status
+        }));
+      }
+    });
+  };
+
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
     ws.on('message', async (data) => {
       try {
@@ -309,6 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ws.username = user.username;
               ws.isAdmin = user.isAdmin || false;
               connectedClients.add(ws);
+              await storage.setUserOnline(user.id);
               
               ws.send(JSON.stringify({ 
                 type: 'auth_success', 
@@ -325,6 +339,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: 'conversations_list', 
                 conversations 
               }));
+              
+              // Broadcast user presence update
+              broadcastPresenceUpdate(user.id, 'online');
               
               // Broadcast user joined
               broadcastToClients({ 
@@ -365,6 +382,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             break;
             
+          case 'join_conversation':
+            if (ws.userId && message.otherUserId) {
+              storage.joinConversation(ws.userId, message.otherUserId, ws.userId);
+              
+              // Send conversation messages
+              const messages = await storage.getConversationMessages(ws.userId, message.otherUserId);
+              ws.send(JSON.stringify({ 
+                type: 'message_history', 
+                messages 
+              }));
+              
+              // Broadcast presence update to show user is in chat
+              broadcastPresenceUpdate(ws.userId, 'online');
+            }
+            break;
+            
+          case 'leave_conversation':
+            if (ws.userId && message.otherUserId) {
+              storage.leaveConversation(ws.userId, message.otherUserId, ws.userId);
+            }
+            break;
+            
+          case 'send_audio':
+            if (ws.userId && message.recipientId && message.audioData) {
+              // Invia audio al destinatario
+              const recipientClient = Array.from(connectedClients).find(client => client.userId === message.recipientId);
+              
+              if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
+                recipientClient.send(JSON.stringify({ 
+                  type: 'receive_audio', 
+                  audioData: message.audioData,
+                  senderId: ws.userId,
+                  senderUsername: ws.username
+                }));
+              }
+            }
+            break;
+            
           case 'god_mode_view':
             if (ws.isAdmin) {
               const targetUser = await storage.getUserByUsername(message.targetUsername);
@@ -385,6 +440,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
+      if (ws.userId) {
+        storage.setUserOffline(ws.userId);
+        broadcastPresenceUpdate(ws.userId, 'offline');
+      }
       connectedClients.delete(ws);
       if (ws.username) {
         broadcastToClients({ 

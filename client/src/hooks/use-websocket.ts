@@ -11,7 +11,9 @@ type WebSocketMessage =
   | { type: 'message_deleted'; messageId: string }
   | { type: 'user_joined'; username: string }
   | { type: 'user_left'; username: string }
-  | { type: 'god_mode_messages'; messages: Message[]; targetUser: User };
+  | { type: 'god_mode_messages'; messages: Message[]; targetUser: User }
+  | { type: 'presence_update'; userId: string; status: 'online' | 'offline' }
+  | { type: 'receive_audio'; audioData: string; senderId: string; senderUsername: string };
 
 export function useWebSocket() {
   const ws = useRef<WebSocket | null>(null);
@@ -19,6 +21,8 @@ export function useWebSocket() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [userPresence, setUserPresence] = useState<Map<string, 'online' | 'offline' | 'in-your-chat'>>(new Map());
+  const audioReceivedCallback = useRef<((audioData: string, senderId: string, senderUsername: string) => void) | null>(null);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -62,6 +66,21 @@ export function useWebSocket() {
           
         case 'message_deleted':
           setMessages(prev => prev.filter(msg => msg.id !== message.messageId));
+          break;
+          
+        case 'presence_update':
+          setUserPresence(prev => {
+            const newMap = new Map(prev);
+            newMap.set(message.userId, message.status);
+            return newMap;
+          });
+          break;
+          
+        case 'receive_audio':
+          // Trigger audio received callback if set
+          if (audioReceivedCallback.current) {
+            audioReceivedCallback.current(message.audioData, message.senderId, message.senderUsername);
+          }
           break;
       }
     };
@@ -114,6 +133,14 @@ export function useWebSocket() {
 
   const leaveConversation = async (userId1: string, userId2: string) => {
     try {
+      // Send WebSocket message to leave conversation
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({ 
+          type: 'leave_conversation', 
+          otherUserId: userId2 
+        }));
+      }
+      
       await fetch(`/api/conversations/${userId1}/${userId2}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,6 +149,39 @@ export function useWebSocket() {
     } catch (error) {
       console.error('Failed to leave conversation:', error);
     }
+  };
+
+  const joinConversation = (otherUserId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ 
+        type: 'join_conversation', 
+        otherUserId 
+      }));
+    }
+  };
+
+  const getUserPresenceStatus = (userId: string): 'online' | 'offline' | 'in-your-chat' => {
+    return userPresence.get(userId) || 'offline';
+  };
+
+  const sendAudio = (audioBlob: Blob, recipientId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        ws.current!.send(JSON.stringify({
+          type: 'send_audio',
+          audioData: base64,
+          recipientId
+        }));
+      };
+      reader.readAsDataURL(audioBlob);
+    }
+  };
+
+  const setAudioReceivedCallback = (callback: (audioData: string, senderId: string, senderUsername: string) => void) => {
+    audioReceivedCallback.current = callback;
   };
 
   const viewUserAsGod = (targetUsername: string) => {
@@ -138,10 +198,15 @@ export function useWebSocket() {
     messages,
     conversations,
     user,
+    userPresence,
     authenticate,
     sendMessage,
     loadConversation,
     leaveConversation,
+    joinConversation,
     viewUserAsGod,
+    getUserPresenceStatus,
+    sendAudio,
+    setAudioReceivedCallback,
   };
 }

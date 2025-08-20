@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/theme-provider";
 import { MessageBubble } from "@/components/message-bubble";
+import { WalkieTalkie, useAudioPlayer } from "@/components/walkie-talkie";
+import { PresenceIndicator } from "@/components/presence-indicator";
 import type { Message, User as UserType } from "@shared/schema";
 
 interface ChatProps {
@@ -20,6 +22,8 @@ interface ChatProps {
   godModeTarget?: string;
   onExitGodMode?: () => void;
   onEditMessage?: (messageId: string, content: string) => void;
+  getUserPresenceStatus?: (userId: string) => 'online' | 'offline' | 'in-your-chat';
+  onSendAudio?: (audioData: Blob, recipientId: string) => void;
 }
 
 export default function Chat({ 
@@ -33,12 +37,27 @@ export default function Chat({
   isGodMode = false,
   godModeTarget,
   onExitGodMode,
-  onEditMessage
+  onEditMessage,
+  getUserPresenceStatus,
+  onSendAudio
 }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { theme, toggleTheme } = useTheme();
+  const { playAudioData } = useAudioPlayer();
+
+  // Determina se il walkie-talkie è abilitato (entrambi gli utenti nella stessa chat)
+  const isWalkieTalkieEnabled = getUserPresenceStatus ? 
+    getUserPresenceStatus(recipientId) === 'in-your-chat' &&
+    getUserPresenceStatus(user.id) === 'in-your-chat' :
+    false;
+
+  const handleSendAudio = (audioData: Blob) => {
+    if (onSendAudio) {
+      onSendAudio(audioData, recipientId);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
