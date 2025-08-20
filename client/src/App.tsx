@@ -34,6 +34,7 @@ function AppContent() {
     authenticate, 
     sendMessage,
     loadConversation,
+    leaveConversation,
     viewUserAsGod 
   } = useWebSocket();
 
@@ -80,7 +81,10 @@ function AppContent() {
     }
   };
 
-  const handleBackToConversations = () => {
+  const handleBackToConversations = async () => {
+    if (currentConversation && currentUser) {
+      await leaveConversation(currentUser.id, currentConversation.userId);
+    }
     setCurrentConversation(null);
     setCurrentScreen(currentUser?.isAdmin ? "admin" : "conversations");
   };

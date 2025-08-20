@@ -19,8 +19,7 @@ export interface IStorage {
   getMessagesByUser(userId: string): Promise<Message[]>;
   getConversationMessages(userId1: string, userId2: string): Promise<Message[]>;
   getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>;
-  markMessageAsViewed(messageId: string, viewerId: string): Promise<void>;
-  getMessagesForDestruction(): Promise<Message[]>;
+  clearConversation(userId1: string, userId2: string): Promise<void>;
   editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined>;
   deleteMessage(messageId: string): Promise<boolean>;
   
@@ -34,14 +33,13 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private messages: Map<string, Message>;
   private invitations: Map<string, Invitation>;
+  private activeConversations: Map<string, Set<string>>; // conversationId -> Set of active userIds
 
   constructor() {
     this.users = new Map();
     this.messages = new Map();
     this.invitations = new Map();
-    
-    // Start message destruction timer
-    this.startMessageDestruction();
+    this.activeConversations = new Map();
     
     // Start VPN load balancing
     vpnService.startLoadBalancing();
@@ -220,8 +218,6 @@ export class MemStorage implements IStorage {
       isEncrypted: true,
       editedBy: null,
       editedAt: null,
-      viewedAt: null,
-      destructionScheduled: false,
     };
     this.messages.set(id, newMessage);
     
@@ -235,26 +231,44 @@ export class MemStorage implements IStorage {
     return newMessage;
   }
 
-  async markMessageAsViewed(messageId: string, viewerId: string): Promise<void> {
-    const message = this.messages.get(messageId);
-    if (message && message.recipientId === viewerId && !message.viewedAt) {
-      message.viewedAt = new Date();
-      this.messages.set(messageId, message);
+  async clearConversation(userId1: string, userId2: string): Promise<void> {
+    // Delete all messages between these two users
+    const messagesToDelete = Array.from(this.messages.values()).filter(message => 
+      (message.userId === userId1 && message.recipientId === userId2) ||
+      (message.userId === userId2 && message.recipientId === userId1)
+    );
+    
+    messagesToDelete.forEach(message => {
+      this.messages.delete(message.id);
+    });
+  }
+
+  // Track active users in conversations
+  joinConversation(userId1: string, userId2: string, activeUserId: string): void {
+    const conversationId = this.getConversationId(userId1, userId2);
+    if (!this.activeConversations.has(conversationId)) {
+      this.activeConversations.set(conversationId, new Set());
+    }
+    this.activeConversations.get(conversationId)!.add(activeUserId);
+  }
+
+  leaveConversation(userId1: string, userId2: string, activeUserId: string): void {
+    const conversationId = this.getConversationId(userId1, userId2);
+    const activeUsers = this.activeConversations.get(conversationId);
+    
+    if (activeUsers) {
+      activeUsers.delete(activeUserId);
       
-      // Schedule destruction after 30 seconds
-      setTimeout(() => {
-        this.deleteMessage(messageId);
-      }, 30000);
+      // If no users are active in this conversation, clear it
+      if (activeUsers.size === 0) {
+        this.clearConversation(userId1, userId2);
+        this.activeConversations.delete(conversationId);
+      }
     }
   }
 
-  async getMessagesForDestruction(): Promise<Message[]> {
-    const now = new Date();
-    return Array.from(this.messages.values()).filter(message => 
-      message.viewedAt && 
-      !message.destructionScheduled &&
-      (now.getTime() - message.viewedAt.getTime()) >= 30000
-    );
+  private getConversationId(userId1: string, userId2: string): string {
+    return [userId1, userId2].sort().join('-');
   }
 
   async getConversationMessages(userId1: string, userId2: string): Promise<Message[]> {
@@ -354,18 +368,6 @@ export class MemStorage implements IStorage {
 
   private generateRandomIP(): string {
     return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-  }
-
-  private startMessageDestruction(): void {
-    // Check for messages to destroy every 10 seconds
-    setInterval(async () => {
-      const messagesToDestroy = await this.getMessagesForDestruction();
-      messagesToDestroy.forEach(message => {
-        message.destructionScheduled = true;
-        this.messages.set(message.id, message);
-        this.deleteMessage(message.id);
-      });
-    }, 10000);
   }
 }
 

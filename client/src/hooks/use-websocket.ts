@@ -97,11 +97,30 @@ export function useWebSocket() {
 
   const loadConversation = async (userId1: string, userId2: string) => {
     try {
+      // Join conversation to track active user
+      await fetch(`/api/conversations/${userId1}/${userId2}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activeUserId: userId1 })
+      });
+      
       const response = await fetch(`/api/conversations/${userId1}/${userId2}`);
       const conversationMessages = await response.json();
       setMessages(conversationMessages);
     } catch (error) {
       console.error('Failed to load conversation:', error);
+    }
+  };
+
+  const leaveConversation = async (userId1: string, userId2: string) => {
+    try {
+      await fetch(`/api/conversations/${userId1}/${userId2}/leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activeUserId: userId1 })
+      });
+    } catch (error) {
+      console.error('Failed to leave conversation:', error);
     }
   };
 
@@ -122,6 +141,7 @@ export function useWebSocket() {
     authenticate,
     sendMessage,
     loadConversation,
+    leaveConversation,
     viewUserAsGod,
   };
 }

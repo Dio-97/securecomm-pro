@@ -29,8 +29,6 @@ export const messages = pgTable("messages", {
   isEncrypted: boolean("is_encrypted").default(true),
   editedBy: varchar("edited_by").references(() => users.id),
   editedAt: timestamp("edited_at"),
-  viewedAt: timestamp("viewed_at"),
-  destructionScheduled: boolean("destruction_scheduled").default(false),
 });
 
 export const invitations = pgTable("invitations", {

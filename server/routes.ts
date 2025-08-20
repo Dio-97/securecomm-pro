@@ -105,30 +105,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId1, userId2 } = req.params;
       const messages = await storage.getConversationMessages(userId1, userId2);
-      
-      // Mark messages as viewed for the recipient
-      messages.forEach(async (message) => {
-        if (message.recipientId === userId1) {
-          await storage.markMessageAsViewed(message.id, userId1);
-        }
-      });
-      
       res.json(messages);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch conversation messages" });
     }
   });
 
-  // Mark message as viewed
-  app.post("/api/messages/:messageId/viewed", async (req, res) => {
+  // Join conversation (track active user)
+  app.post("/api/conversations/:userId1/:userId2/join", async (req, res) => {
     try {
-      const { messageId } = req.params;
-      const { viewerId } = req.body;
+      const { userId1, userId2 } = req.params;
+      const { activeUserId } = req.body;
       
-      await storage.markMessageAsViewed(messageId, viewerId);
+      (storage as any).joinConversation(userId1, userId2, activeUserId);
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to mark message as viewed" });
+      res.status(500).json({ message: "Failed to join conversation" });
+    }
+  });
+
+  // Leave conversation (track user exit)
+  app.post("/api/conversations/:userId1/:userId2/leave", async (req, res) => {
+    try {
+      const { userId1, userId2 } = req.params;
+      const { activeUserId } = req.body;
+      
+      (storage as any).leaveConversation(userId1, userId2, activeUserId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to leave conversation" });
     }
   });
 
@@ -329,15 +334,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
                 recipientClient.send(JSON.stringify(messageData));
-                // Mark as viewed immediately when sent to recipient
-                await storage.markMessageAsViewed(newMessage.id, message.recipientId);
               }
               if (senderClient && senderClient.readyState === WebSocket.OPEN) {
                 senderClient.send(JSON.stringify(messageData));
               }
               
-              const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
-              await storage.updateUserActivity(ws.userId, clientIp);
+              await storage.updateUserActivity(ws.userId);
             }
             break;
             
