@@ -115,7 +115,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                   const activity = getActivityStatus(searchUser.lastActivity);
                   return (
                     <Card 
-                      key={searchUser.id}
+                      key={`search-${searchUser.id}`}
                       className="cursor-pointer hover:shadow-sm transition-all"
                       onClick={() => handleStartConversation(searchUser.id, searchUser.username)}
                     >
@@ -164,7 +164,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <div className="space-y-2">
               {conversations.map((conversation) => (
                 <Card 
-                  key={conversation.userId}
+                  key={`conversation-${conversation.userId}`}
                   className="cursor-pointer hover:shadow-sm transition-all"
                   onClick={() => onSelectConversation(conversation.userId, conversation.username)}
                 >

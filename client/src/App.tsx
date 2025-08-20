@@ -6,11 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useWebSocket } from "@/hooks/use-websocket";
 import Login from "@/pages/login";
-import MainChat from "@/pages/main-chat";
+import Chat from "@/pages/chat";
+import Conversations from "@/pages/conversations";
 import Admin from "@/pages/admin";
 import type { User } from "@shared/schema";
 
-type Screen = "login" | "chat" | "admin";
+type Screen = "login" | "conversations" | "chat" | "admin";
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("login");
@@ -35,7 +36,7 @@ function AppContent() {
     if (user.isAdmin) {
       setCurrentScreen("admin");
     } else {
-      setCurrentScreen("chat");
+      setCurrentScreen("conversations");
     }
   };
 
@@ -75,6 +76,7 @@ function AppContent() {
 
   const handleBackToConversations = () => {
     setCurrentConversation(null);
+    setCurrentScreen(currentUser?.isAdmin ? "admin" : "conversations");
   };
 
   const handleEditMessage = async (messageId: string, content: string) => {
@@ -100,14 +102,23 @@ function AppContent() {
         />
       )}
       
-      {currentScreen === "chat" && currentUser && (
-        <MainChat
+      {currentScreen === "conversations" && currentUser && (
+        <Conversations
+          user={currentUser}
+          conversations={conversations}
+          onSelectConversation={handleSelectConversation}
+          onLogout={handleLogout}
+        />
+      )}
+      
+      {currentScreen === "chat" && currentUser && currentConversation && (
+        <Chat
           user={currentUser}
           messages={messages}
-          conversations={conversations}
-          currentConversation={currentConversation}
+          recipientId={currentConversation.userId}
+          recipientUsername={currentConversation.username}
           onSendMessage={sendMessage}
-          onSelectConversation={handleSelectConversation}
+          onBack={handleBackToConversations}
           onLogout={handleLogout}
           isGodMode={isGodMode}
           godModeTarget={godModeTarget}
