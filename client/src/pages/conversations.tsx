@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield } from "lucide-react";
+import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { VPNStatus } from "@/components/vpn-status";
 import { PresenceIndicator } from "@/components/presence-indicator";
 import { SecurityPanel } from "@/components/SecurityPanel";
+import { QRCodeModal } from "@/components/QRCodeModal";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Message } from "@shared/schema";
 
@@ -37,6 +38,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
@@ -85,6 +87,38 @@ export default function Conversations({ user, conversations, onSelectConversatio
     setSearchQuery("");
   };
 
+  const handleQRScanned = async (qrData: any) => {
+    try {
+      // Verify the QR code with the backend
+      const response = await fetch('/api/qr/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrData: JSON.stringify(qrData) })
+      });
+      
+      const result = await response.json();
+      
+      if (result.isValid && result.data) {
+        // If it's a conversation verification QR, start that conversation
+        if (result.data.type === 'conversation_verification') {
+          const otherUserId = result.data.senderId === user.id ? result.data.recipientId : result.data.senderId;
+          const otherUsername = result.data.senderId === user.id ? result.data.recipientUsername : result.data.senderUsername;
+          
+          await handleStartConversation(otherUserId, otherUsername);
+        } else if (result.data.userId && result.data.username) {
+          // If it's a user verification QR, start conversation with that user
+          await handleStartConversation(result.data.userId, result.data.username);
+        }
+      } else {
+        console.error('Invalid QR code');
+      }
+    } catch (error) {
+      console.error('Failed to verify QR code:', error);
+    }
+    
+    setShowQRScanner(false);
+  };
+
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();
     const activity = new Date(lastActivity);
@@ -120,6 +154,15 @@ export default function Conversations({ user, conversations, onSelectConversatio
         <div className="flex items-center space-x-3">
           <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)}>
             <Plus className="w-4 h-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowQRScanner(true)}
+            title="Scan QR Code"
+          >
+            <QrCode className="w-4 h-4" />
           </Button>
           
           <Button 
@@ -301,6 +344,15 @@ export default function Conversations({ user, conversations, onSelectConversatio
         userId={user.id}
         isVisible={showSecurityPanel}
         onClose={() => setShowSecurityPanel(false)}
+      />
+
+      {/* QR Scanner Modal */}
+      <QRCodeModal
+        isOpen={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+        mode="scan"
+        onQRScanned={handleQRScanned}
+        title="Scan QR Code"
       />
     </div>
   );
