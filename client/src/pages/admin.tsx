@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Crown, Settings, LogOut, Eye, UserPlus, Ban } from "lucide-react";
+import { Crown, Settings, LogOut, Eye, UserPlus, Ban, Trash2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/theme-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
 interface AdminUser {
@@ -23,12 +25,77 @@ interface AdminProps {
   onViewUser: (username: string) => void;
 }
 
+interface CreateUserResponse {
+  user: AdminUser;
+  credentials: {
+    username: string;
+    password: string;
+  };
+}
+
 export default function Admin({ onLogout, onViewUser }: AdminProps) {
   const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
   });
+
+  const createUserMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/users/create", {
+        invitedBy: "admin"
+      });
+      return response.json() as Promise<CreateUserResponse>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Account Created Successfully",
+        description: `Username: ${data.credentials.username}\nPassword: ${data.credentials.password}`,
+        duration: 10000,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create user account",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest("DELETE", `/api/users/${userId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User Deleted",
+        description: "User account has been permanently deleted",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleDeleteUser = (userId: string, username: string) => {
+    if (confirm(`Are you sure you want to delete user @${username}? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(userId);
+    }
+  };
+
+  const handleCreateUser = () => {
+    createUserMutation.mutate();
+  };
 
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();
@@ -124,6 +191,34 @@ export default function Admin({ onLogout, onViewUser }: AdminProps) {
                         <span>{user.location}</span>
                       </div>
                     </div>
+                    
+                    <div className="flex justify-between mt-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewUser(user.username);
+                        }}
+                        className="text-xs"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteUser(user.id, user.username);
+                        }}
+                        className="text-xs"
+                        disabled={deleteUserMutation.isPending}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -135,18 +230,18 @@ export default function Admin({ onLogout, onViewUser }: AdminProps) {
         <Card className="mt-8">
           <CardContent className="p-6">
             <h4 className="font-semibold mb-4 text-card-foreground">Admin Actions</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                onClick={handleCreateUser}
+                disabled={createUserMutation.isPending}
+                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700"
+              >
+                <Shield className="w-4 h-4" />
+                <span>{createUserMutation.isPending ? "Creating..." : "Create Secure Account"}</span>
+              </Button>
               <Button className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700">
                 <Eye className="w-4 h-4" />
-                <span>Monitor All</span>
-              </Button>
-              <Button className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700">
-                <UserPlus className="w-4 h-4" />
-                <span>Invite User</span>
-              </Button>
-              <Button className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700">
-                <Ban className="w-4 h-4" />
-                <span>Manage Access</span>
+                <span>Monitor All Sessions</span>
               </Button>
             </div>
           </CardContent>

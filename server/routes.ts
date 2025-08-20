@@ -129,6 +129,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create user with auto-generated credentials (admin only)
+  app.post("/api/users/create", async (req, res) => {
+    try {
+      const { invitedBy } = req.body;
+      const result = await storage.createUserWithCredentials(invitedBy);
+      
+      res.json({
+        user: {
+          id: result.user.id,
+          username: result.user.username,
+          lastActivity: result.user.lastActivity,
+          location: result.user.location,
+          messageCount: result.user.messageCount,
+          initials: result.user.username.split('_').map(n => n[0].toUpperCase()).join(''),
+          name: result.user.username.split('_').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ')
+        },
+        credentials: result.credentials
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  // Delete user (admin only)
+  app.delete("/api/users/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const success = await storage.deleteUser(userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "User not found or cannot be deleted" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // WebSocket connection handling
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
     ws.on('message', async (data) => {

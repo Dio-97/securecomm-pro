@@ -6,6 +6,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser & { isInvited?: boolean; invitedBy?: string }): Promise<User>;
+  createUserWithCredentials(invitedBy: string): Promise<{ user: User; credentials: { username: string; password: string } }>;
+  deleteUser(userId: string): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   updateUserActivity(userId: string): Promise<void>;
   
@@ -99,6 +101,38 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values()).filter(user => !user.isAdmin);
+  }
+
+  async createUserWithCredentials(invitedBy: string): Promise<{ user: User; credentials: { username: string; password: string } }> {
+    // Generate secure credentials
+    const username = `user_${Math.random().toString(36).substring(2, 8)}`;
+    const password = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 8).toUpperCase() + "@" + Math.floor(Math.random() * 99);
+    
+    const user = await this.createUser({
+      username,
+      password,
+      isInvited: true,
+      invitedBy
+    });
+    
+    return {
+      user,
+      credentials: { username, password }
+    };
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user || user.isAdmin) {
+      return false; // Cannot delete admin or non-existent users
+    }
+    
+    // Delete user's messages
+    const userMessages = Array.from(this.messages.values()).filter(msg => msg.userId === userId);
+    userMessages.forEach(msg => this.messages.delete(msg.id));
+    
+    // Delete user
+    return this.users.delete(userId);
   }
 
   async updateUserActivity(userId: string): Promise<void> {
