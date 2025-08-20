@@ -135,30 +135,23 @@ export default function Chat({
           setIsFirstMessage(false);
         }
       } else if (qrPurpose === 'file') {
-        // Upload the pending file
+        // After verification for file sharing, open the file upload modal
         if (pendingFileUpload) {
           await uploadFile(pendingFileUpload);
+        } else {
+          // If no pending file, just open the file upload modal
+          setShowFileUpload(true);
         }
       }
     }
   };
 
-  // Handle file selection (not upload yet)
+  // Handle file selection and upload (conversation is already verified at this point)
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check if this is the first file share and conversation needs verification
-    if (isFirstFileShare && !isConversationVerified) {
-      setPendingFileUpload(file);
-      setQRPurpose('file');
-      setQRMode('generate');
-      setShowQRModal(true);
-      setShowFileUpload(false);
-      return;
-    }
-
-    // If already verified, upload immediately
+    // Since we only reach here when conversation is verified, upload immediately
     uploadFile(file);
   };
 
@@ -258,7 +251,16 @@ export default function Chat({
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setShowFileUpload(true)}
+            onClick={() => {
+              // Check if conversation is verified before allowing file upload
+              if (!isConversationVerified) {
+                setQRPurpose('file');
+                setQRMode('generate');
+                setShowQRModal(true);
+              } else {
+                setShowFileUpload(true);
+              }
+            }}
             title="Share Encrypted File"
           >
             <FileUp className="w-4 h-4" />
@@ -304,7 +306,21 @@ export default function Chat({
       {/* Message Input */}
       <div className="bg-card border-t p-4">
         <div className="flex items-end space-x-3">
-          <Button variant="ghost" size="sm">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => {
+              // Check if conversation is verified before allowing file attachment
+              if (!isConversationVerified) {
+                setQRPurpose('file');
+                setQRMode('generate');
+                setShowQRModal(true);
+              } else {
+                setShowFileUpload(true);
+              }
+            }}
+            title="Attach File"
+          >
             <Paperclip className="w-4 h-4" />
           </Button>
           
