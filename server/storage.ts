@@ -17,6 +17,8 @@ export interface IStorage {
   getMessagesByUser(userId: string): Promise<Message[]>;
   getConversationMessages(userId1: string, userId2: string): Promise<Message[]>;
   getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>;
+  markMessageAsViewed(messageId: string, viewerId: string): Promise<void>;
+  getMessagesForDestruction(): Promise<Message[]>;
   editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined>;
   deleteMessage(messageId: string): Promise<boolean>;
   
@@ -35,6 +37,9 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.messages = new Map();
     this.invitations = new Map();
+    
+    // Start message destruction timer
+    this.startMessageDestruction();
     
     // Create admin user
     const adminId = randomUUID();
@@ -157,6 +162,8 @@ export class MemStorage implements IStorage {
       isEncrypted: true,
       editedBy: null,
       editedAt: null,
+      viewedAt: null,
+      destructionScheduled: false,
     };
     this.messages.set(id, newMessage);
     
@@ -168,6 +175,28 @@ export class MemStorage implements IStorage {
     }
     
     return newMessage;
+  }
+
+  async markMessageAsViewed(messageId: string, viewerId: string): Promise<void> {
+    const message = this.messages.get(messageId);
+    if (message && message.recipientId === viewerId && !message.viewedAt) {
+      message.viewedAt = new Date();
+      this.messages.set(messageId, message);
+      
+      // Schedule destruction after 30 seconds
+      setTimeout(() => {
+        this.deleteMessage(messageId);
+      }, 30000);
+    }
+  }
+
+  async getMessagesForDestruction(): Promise<Message[]> {
+    const now = new Date();
+    return Array.from(this.messages.values()).filter(message => 
+      message.viewedAt && 
+      !message.destructionScheduled &&
+      (now.getTime() - message.viewedAt.getTime()) >= 30000
+    );
   }
 
   async getConversationMessages(userId1: string, userId2: string): Promise<Message[]> {
@@ -263,6 +292,18 @@ export class MemStorage implements IStorage {
       invitation.used = true;
       this.invitations.set(invitation.id, invitation);
     }
+  }
+
+  private startMessageDestruction(): void {
+    // Check for messages to destroy every 10 seconds
+    setInterval(async () => {
+      const messagesToDestroy = await this.getMessagesForDestruction();
+      messagesToDestroy.forEach(message => {
+        message.destructionScheduled = true;
+        this.messages.set(message.id, message);
+        this.deleteMessage(message.id);
+      });
+    }, 10000);
   }
 }
 

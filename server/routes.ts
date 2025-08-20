@@ -100,9 +100,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId1, userId2 } = req.params;
       const messages = await storage.getConversationMessages(userId1, userId2);
+      
+      // Mark messages as viewed for the recipient
+      messages.forEach(async (message) => {
+        if (message.recipientId === userId1) {
+          await storage.markMessageAsViewed(message.id, userId1);
+        }
+      });
+      
       res.json(messages);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch conversation messages" });
+    }
+  });
+
+  // Mark message as viewed
+  app.post("/api/messages/:messageId/viewed", async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const { viewerId } = req.body;
+      
+      await storage.markMessageAsViewed(messageId, viewerId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark message as viewed" });
     }
   });
 
@@ -272,6 +293,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
                 recipientClient.send(JSON.stringify(messageData));
+                // Mark as viewed immediately when sent to recipient
+                await storage.markMessageAsViewed(newMessage.id, message.recipientId);
               }
               if (senderClient && senderClient.readyState === WebSocket.OPEN) {
                 senderClient.send(JSON.stringify(messageData));
