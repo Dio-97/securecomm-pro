@@ -36,7 +36,8 @@ function AppContent() {
     sendMessage,
     loadConversation,
     leaveConversation,
-    viewUserAsGod 
+    viewUserAsGod,
+    getUserPresenceStatus 
   } = useWebSocket();
 
   const handleLogin = (user: User) => {
@@ -127,6 +128,7 @@ function AppContent() {
           onLogout={handleLogout}
           onUserUpdate={handleUserUpdate}
           onConversationRemoved={handleConversationRemoved}
+          getUserPresenceStatus={getUserPresenceStatus}
         />
       )}
       
