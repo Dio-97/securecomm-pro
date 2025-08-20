@@ -1,5 +1,6 @@
 import { type User, type Message, type InsertUser, type Invitation } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { vpnService } from "./vpn-service";
 
 export interface IStorage {
   // User management
@@ -9,7 +10,8 @@ export interface IStorage {
   createUserWithCredentials(invitedBy: string): Promise<{ user: User; credentials: { username: string; password: string } }>;
   deleteUser(userId: string): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
-  updateUserActivity(userId: string): Promise<void>;
+  updateUserActivity(userId: string, realIp?: string): Promise<void>;
+  rotateUserVPN(userId: string): Promise<User | undefined>;
   
   // Message management
   createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message>;
@@ -41,8 +43,14 @@ export class MemStorage implements IStorage {
     // Start message destruction timer
     this.startMessageDestruction();
     
+    // Start VPN load balancing
+    vpnService.startLoadBalancing();
+    
     // Create admin user
     const adminId = randomUUID();
+    const adminRealIp = this.generateRandomIP();
+    const { maskedIp: adminMaskedIp, vpnServer: adminVpnServer } = vpnService.maskIP(adminRealIp);
+    
     const admin: User = {
       id: adminId,
       username: "admin23",
@@ -51,8 +59,12 @@ export class MemStorage implements IStorage {
       isInvited: true,
       invitedBy: null,
       lastActivity: new Date(),
-      location: "System",
+      location: "Secure Network",
       messageCount: "0",
+      realIp: adminRealIp,
+      maskedIp: adminMaskedIp,
+      vpnServer: adminVpnServer.name,
+      vpnCountry: adminVpnServer.country,
     };
     this.users.set(adminId, admin);
     
@@ -65,6 +77,9 @@ export class MemStorage implements IStorage {
     
     demoUsers.forEach(user => {
       const id = randomUUID();
+      const realIp = this.generateRandomIP();
+      const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
+      
       const demoUser: User = {
         id,
         username: user.username,
@@ -73,8 +88,12 @@ export class MemStorage implements IStorage {
         isInvited: true,
         invitedBy: adminId,
         lastActivity: new Date(),
-        location: user.location,
+        location: `${vpnServer.city}, ${vpnServer.country}`,
         messageCount: Math.floor(Math.random() * 100).toString(),
+        realIp,
+        maskedIp,
+        vpnServer: vpnServer.name,
+        vpnCountry: vpnServer.country,
       };
       this.users.set(id, demoUser);
     });
@@ -92,6 +111,11 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser & { isInvited?: boolean; invitedBy?: string }): Promise<User> {
     const id = randomUUID();
+    
+    // Generate VPN masking for new user
+    const realIp = this.generateRandomIP();
+    const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
+    
     const user: User = { 
       ...insertUser, 
       id,
@@ -99,8 +123,12 @@ export class MemStorage implements IStorage {
       isInvited: insertUser.isInvited || false,
       invitedBy: insertUser.invitedBy || null,
       lastActivity: new Date(),
-      location: "Unknown",
+      location: `${vpnServer.city}, ${vpnServer.country}`,
       messageCount: "0",
+      realIp,
+      maskedIp,
+      vpnServer: vpnServer.name,
+      vpnCountry: vpnServer.country,
     };
     this.users.set(id, user);
     return user;
@@ -142,12 +170,42 @@ export class MemStorage implements IStorage {
     return this.users.delete(userId);
   }
 
-  async updateUserActivity(userId: string): Promise<void> {
+  async updateUserActivity(userId: string, realIp?: string): Promise<void> {
     const user = this.users.get(userId);
     if (user) {
       user.lastActivity = new Date();
+      
+      // Update IP if provided
+      if (realIp && realIp !== user.realIp) {
+        user.realIp = realIp;
+        
+        // Re-mask the new IP
+        const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
+        user.maskedIp = maskedIp;
+        user.vpnServer = vpnServer.name;
+        user.vpnCountry = vpnServer.country;
+        user.location = `${vpnServer.city}, ${vpnServer.country}`;
+      }
+      
       this.users.set(userId, user);
     }
+  }
+
+  async rotateUserVPN(userId: string): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (user && user.realIp) {
+      const currentVpnId = vpnService.getAllServers().find(s => s.name === user.vpnServer)?.id;
+      const { maskedIp, vpnServer } = vpnService.rotateVPN(currentVpnId);
+      
+      user.maskedIp = maskedIp;
+      user.vpnServer = vpnServer.name;
+      user.vpnCountry = vpnServer.country;
+      user.location = `${vpnServer.city}, ${vpnServer.country}`;
+      
+      this.users.set(userId, user);
+      return user;
+    }
+    return undefined;
   }
 
   async createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message> {
@@ -292,6 +350,10 @@ export class MemStorage implements IStorage {
       invitation.used = true;
       this.invitations.set(invitation.id, invitation);
     }
+  }
+
+  private generateRandomIP(): string {
+    return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
   }
 
   private startMessageDestruction(): void {

@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { loginSchema, insertMessageSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { vpnService } from "./vpn-service";
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
@@ -29,14 +30,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // Update user activity
-      await storage.updateUserActivity(user.id);
+      // Get client IP and update user activity
+      const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+      await storage.updateUserActivity(user.id, clientIp);
       
       res.json({ 
         user: { 
           id: user.id, 
           username: user.username, 
-          isAdmin: user.isAdmin 
+          isAdmin: user.isAdmin,
+          maskedIp: user.maskedIp,
+          vpnServer: user.vpnServer,
+          vpnCountry: user.vpnCountry
         } 
       });
     } catch (error) {
@@ -232,6 +237,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get VPN servers status
+  app.get("/api/vpn/servers", async (req, res) => {
+    try {
+      const servers = vpnService.getAllServers();
+      res.json(servers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch VPN servers" });
+    }
+  });
+
+  // Rotate VPN for user
+  app.post("/api/vpn/rotate", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const updatedUser = await storage.rotateUserVPN(userId);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({
+        maskedIp: updatedUser.maskedIp,
+        vpnServer: updatedUser.vpnServer,
+        vpnCountry: updatedUser.vpnCountry,
+        location: updatedUser.location
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to rotate VPN" });
+    }
+  });
+
   // WebSocket connection handling
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
     ws.on('message', async (data) => {
@@ -300,7 +336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 senderClient.send(JSON.stringify(messageData));
               }
               
-              await storage.updateUserActivity(ws.userId);
+              const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+              await storage.updateUserActivity(ws.userId, clientIp);
             }
             break;
             

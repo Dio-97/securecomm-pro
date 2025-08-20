@@ -13,6 +13,10 @@ export const users = pgTable("users", {
   lastActivity: timestamp("last_activity").defaultNow(),
   location: text("location"),
   messageCount: text("message_count").default("0"),
+  realIp: text("real_ip"),
+  maskedIp: text("masked_ip"),
+  vpnServer: text("vpn_server"),
+  vpnCountry: text("vpn_country"),
 });
 
 export const messages = pgTable("messages", {

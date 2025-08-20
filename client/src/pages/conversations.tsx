@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { VPNStatus } from "@/components/vpn-status";
 import type { User as UserType, Message } from "@shared/schema";
 
 interface ConversationsProps {
@@ -15,6 +16,7 @@ interface ConversationsProps {
   conversations: Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>;
   onSelectConversation: (userId: string, username: string) => void;
   onLogout: () => void;
+  onUserUpdate?: (updatedUser: Partial<UserType>) => void;
 }
 
 interface SearchUser {
@@ -26,10 +28,16 @@ interface SearchUser {
   location: string;
 }
 
-export default function Conversations({ user, conversations, onSelectConversation, onLogout }: ConversationsProps) {
+export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate }: ConversationsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const { theme, toggleTheme } = useTheme();
+
+  const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
+    if (onUserUpdate) {
+      onUserUpdate(newData);
+    }
+  };
 
   const { data: searchResults = [], isLoading: searchLoading } = useQuery<SearchUser[]>({
     queryKey: ["/api/users/search", searchQuery],
@@ -145,6 +153,11 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
       )}
 
+      {/* VPN Status */}
+      <div className="border-b p-4">
+        <VPNStatus user={user} onVPNRotate={handleVPNRotate} />
+      </div>
+
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
@@ -216,11 +229,11 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <ShieldQuestion className="w-3 h-3" />
             <span>End-to-end encrypted</span>
             <span>•</span>
-            <span>IP: 192.168.xxx.xxx (Masked)</span>
+            <span>IP: {user.maskedIp?.split('.').slice(0, -1).join('.')}.xxx (Masked)</span>
           </div>
           <div className="text-xs text-muted-foreground">
             <ShieldQuestion className="w-3 h-3 inline mr-1" />
-            <span>{conversations.length}</span> conversations
+            <span>{conversations.length}</span> conversations • VPN: {user.vpnCountry}
           </div>
         </div>
       </div>

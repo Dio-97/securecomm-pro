@@ -20,6 +20,12 @@ function AppContent() {
   const [godModeTarget, setGodModeTarget] = useState<string>("");
   const [currentConversation, setCurrentConversation] = useState<{ userId: string; username: string } | null>(null);
 
+  const handleUserUpdate = (updatedData: Partial<User>) => {
+    if (currentUser) {
+      setCurrentUser({ ...currentUser, ...updatedData });
+    }
+  };
+
   const { 
     isConnected, 
     messages, 
@@ -108,6 +114,7 @@ function AppContent() {
           conversations={conversations}
           onSelectConversation={handleSelectConversation}
           onLogout={handleLogout}
+          onUserUpdate={handleUserUpdate}
         />
       )}
       

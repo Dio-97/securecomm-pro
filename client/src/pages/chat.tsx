@@ -173,9 +173,9 @@ export default function Chat({
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
             <ShieldQuestion className="w-3 h-3" />
-            <span>End-to-end encrypted</span>
+            <span>Messages auto-destruct after viewing</span>
             <span>•</span>
-            <span>IP: 192.168.xxx.xxx (Masked)</span>
+            <span>IP: {user.maskedIp?.split('.').slice(0, -1).join('.')}.xxx (Masked via {user.vpnCountry})</span>
           </div>
           <div className="text-xs text-muted-foreground">
             <ShieldQuestion className="w-3 h-3 inline mr-1" />
