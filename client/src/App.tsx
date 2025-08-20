@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { disablePersistentLogin } from "@/lib/auth";
 import Login from "@/pages/login";
 import Chat from "@/pages/chat";
 import Conversations from "@/pages/conversations";
@@ -52,6 +53,8 @@ function AppContent() {
   };
 
   const handleLogout = () => {
+    // Clear persistent login credentials when user explicitly logs out
+    disablePersistentLogin();
     setCurrentUser(null);
     setCurrentScreen("login");
     setIsGodMode(false);

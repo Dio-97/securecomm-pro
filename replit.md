@@ -5,6 +5,7 @@ This is a real-time chat application built with React and Node.js, featuring sec
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Language: Italian (primary communication)
 
 # System Architecture
 
@@ -23,6 +24,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Authentication & Security
 - **Two-Factor Authentication**: Required 6-digit code validation for all user logins
+- **Persistent Login**: Optional "Keep me signed in" feature with encrypted credential storage in localStorage
+- **Auto-Login**: Automatic authentication on app restart when persistent login is enabled
+- **Credential Security**: Simple encryption/decryption for stored credentials with 30-day expiration
 - **Role-Based Access**: Admin users have elevated privileges for user management and monitoring
 - **Password Storage**: Plain text passwords (development setup - should be hashed in production)
 - **Message Encryption**: All messages marked as encrypted by default
@@ -42,6 +46,11 @@ Preferred communication style: Simple, everyday language.
 - **God Mode**: Admin users can view messages as any user for moderation purposes
 - **User Management**: View all users, their activity status, and message counts
 - **Invitation System**: Email-based user invitation system managed by admins
+
+## UI/UX Features
+- **Compact VPN Panel**: Optimized VPN connection interface with reduced height for better screen utilization
+- **Responsive Security Panel**: Streamlined security center with compact card layouts
+- **Login Experience**: Enhanced with persistent login options and smooth auto-authentication flow
 
 ## External Dependencies
 

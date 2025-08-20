@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, Lock, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useTheme } from "@/components/theme-provider";
-import { login } from "@/lib/auth";
+import { 
+  login, 
+  attemptAutoLogin, 
+  saveCredentials, 
+  isPersistentLoginEnabled, 
+  enablePersistentLogin, 
+  disablePersistentLogin,
+  getStoredCredentials,
+  getDecryptedPassword
+} from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 interface LoginProps {
@@ -18,7 +28,39 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [persistentLogin, setPersistentLogin] = useState(isPersistentLoginEnabled());
+  const [isAutoLoginAttempting, setIsAutoLoginAttempting] = useState(true);
   const { toast } = useToast();
+
+  // Attempt auto-login on component mount
+  useEffect(() => {
+    const attemptAutoLoginAsync = async () => {
+      try {
+        const result = await attemptAutoLogin();
+        if (result) {
+          onLogin(result.user);
+          const storedCreds = getStoredCredentials();
+          if (storedCreds) {
+            onWebSocketAuth(storedCreds.username, getDecryptedPassword(storedCreds));
+          }
+          return;
+        }
+      } catch (error) {
+        console.log("Auto-login failed, showing login form");
+      }
+      
+      // If auto-login fails or no stored credentials, populate username if available
+      const storedCreds = getStoredCredentials();
+      if (storedCreds) {
+        setUsername(storedCreds.username);
+        setStep("password");
+      }
+      
+      setIsAutoLoginAttempting(false);
+    };
+
+    attemptAutoLoginAsync();
+  }, [onLogin, onWebSocketAuth]);
 
   const handleUsernameSubmit = () => {
     if (!username.trim()) {
@@ -44,7 +86,20 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
 
     setLoading(true);
     try {
+      // Update persistent login setting
+      if (persistentLogin) {
+        enablePersistentLogin();
+      } else {
+        disablePersistentLogin();
+      }
+
       const result = await login({ username, password });
+      
+      // Save credentials if persistent login is enabled
+      if (persistentLogin) {
+        saveCredentials(username, password);
+      }
+      
       onLogin(result.user);
       onWebSocketAuth(username, password);
     } catch (error: any) {
@@ -62,6 +117,28 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
     setStep("username");
     setPassword("");
   };
+
+  // Show loading screen during auto-login attempt
+  if (isAutoLoginAttempting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="w-full max-w-md">
+          <Card className="shadow-xl border">
+            <CardContent className="pt-8 pb-8 px-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Shield className="text-primary-foreground text-2xl animate-pulse" />
+                </div>
+                <h1 className="text-2xl font-bold mb-2 text-foreground">SecureComm Pro</h1>
+                <p className="text-sm text-muted-foreground mb-4">Checking saved credentials...</p>
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -114,9 +191,23 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     className="mt-2"
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   />
                 </div>
                 
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="persistent-login"
+                    checked={persistentLogin}
+                    onCheckedChange={(checked) => setPersistentLogin(!!checked)}
+                  />
+                  <Label 
+                    htmlFor="persistent-login" 
+                    className="text-sm text-muted-foreground cursor-pointer"
+                  >
+                    Keep me signed in (remember credentials)
+                  </Label>
+                </div>
                 
                 <Button 
                   onClick={handleLogin} 
