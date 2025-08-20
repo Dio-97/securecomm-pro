@@ -19,6 +19,7 @@ export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   content: text("content").notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
+  recipientId: varchar("recipient_id").references(() => users.id).notNull(),
   username: text("username").notNull(),
   timestamp: timestamp("timestamp").defaultNow(),
   isEncrypted: boolean("is_encrypted").default(true),

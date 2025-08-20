@@ -84,6 +84,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get conversations for a user
+  app.get("/api/conversations/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const conversations = await storage.getConversations(userId);
+      res.json(conversations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  // Get messages for a specific conversation
+  app.get("/api/conversations/:userId1/:userId2", async (req, res) => {
+    try {
+      const { userId1, userId2 } = req.params;
+      const messages = await storage.getConversationMessages(userId1, userId2);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch conversation messages" });
+    }
+  });
+
+  // Search users by username
+  app.get("/api/users/search/:query", async (req, res) => {
+    try {
+      const { query } = req.params;
+      const allUsers = await storage.getAllUsers();
+      const filtered = allUsers.filter(user => 
+        user.username.toLowerCase().includes(query.toLowerCase())
+      ).map(user => ({
+        id: user.id,
+        username: user.username,
+        initials: user.username.split('.').map(n => n[0].toUpperCase()).join(''),
+        name: user.username.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' '),
+        lastActivity: user.lastActivity,
+        location: user.location
+      }));
+      res.json(filtered);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
   // Edit message (admin only)
   app.put("/api/messages/:messageId", async (req, res) => {
     try {
@@ -192,11 +235,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } 
               }));
               
-              // Send recent messages
-              const messages = await storage.getAllMessages();
+              // Send user's conversations instead of all messages
+              const conversations = await storage.getConversations(user.id);
               ws.send(JSON.stringify({ 
-                type: 'message_history', 
-                messages: messages.slice(-50) 
+                type: 'conversations_list', 
+                conversations 
               }));
               
               // Broadcast user joined
@@ -210,18 +253,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
             
           case 'send_message':
-            if (ws.userId && ws.username) {
+            if (ws.userId && ws.username && message.recipientId) {
               const newMessage = await storage.createMessage({
                 content: message.content,
                 userId: ws.userId,
+                recipientId: message.recipientId,
                 username: ws.username,
               });
               
-              // Broadcast to all connected clients
-              broadcastToClients({ 
+              // Send to sender and recipient only
+              const recipientClient = Array.from(connectedClients).find(client => client.userId === message.recipientId);
+              const senderClient = Array.from(connectedClients).find(client => client.userId === ws.userId);
+              
+              const messageData = { 
                 type: 'new_message', 
                 message: newMessage 
-              });
+              };
+              
+              if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
+                recipientClient.send(JSON.stringify(messageData));
+              }
+              if (senderClient && senderClient.readyState === WebSocket.OPEN) {
+                senderClient.send(JSON.stringify(messageData));
+              }
               
               await storage.updateUserActivity(ws.userId);
             }

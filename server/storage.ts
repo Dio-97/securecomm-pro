@@ -12,9 +12,11 @@ export interface IStorage {
   updateUserActivity(userId: string): Promise<void>;
   
   // Message management
-  createMessage(message: { content: string; userId: string; username: string }): Promise<Message>;
+  createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message>;
   getAllMessages(): Promise<Message[]>;
   getMessagesByUser(userId: string): Promise<Message[]>;
+  getConversationMessages(userId1: string, userId2: string): Promise<Message[]>;
+  getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>;
   editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined>;
   deleteMessage(messageId: string): Promise<boolean>;
   
@@ -143,12 +145,13 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async createMessage(message: { content: string; userId: string; username: string }): Promise<Message> {
+  async createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message> {
     const id = randomUUID();
     const newMessage: Message = {
       id,
       content: message.content,
       userId: message.userId,
+      recipientId: message.recipientId,
       username: message.username,
       timestamp: new Date(),
       isEncrypted: true,
@@ -165,6 +168,46 @@ export class MemStorage implements IStorage {
     }
     
     return newMessage;
+  }
+
+  async getConversationMessages(userId1: string, userId2: string): Promise<Message[]> {
+    return Array.from(this.messages.values())
+      .filter(message => 
+        (message.userId === userId1 && message.recipientId === userId2) ||
+        (message.userId === userId2 && message.recipientId === userId1)
+      )
+      .sort((a, b) => a.timestamp!.getTime() - b.timestamp!.getTime());
+  }
+
+  async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
+    const userMessages = Array.from(this.messages.values())
+      .filter(message => message.userId === userId || message.recipientId === userId);
+    
+    const conversationMap = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
+    
+    for (const message of userMessages) {
+      const otherUserId = message.userId === userId ? message.recipientId : message.userId;
+      const otherUser = this.users.get(otherUserId);
+      
+      if (otherUser) {
+        const existing = conversationMap.get(otherUserId);
+        const isUnread = message.recipientId === userId; // Messages sent TO current user are potentially unread
+        
+        conversationMap.set(otherUserId, {
+          userId: otherUserId,
+          username: otherUser.username,
+          lastMessage: !existing || (message.timestamp! > existing.lastMessage?.timestamp!) ? message : existing.lastMessage,
+          unreadCount: (existing?.unreadCount || 0) + (isUnread ? 1 : 0)
+        });
+      }
+    }
+    
+    return Array.from(conversationMap.values())
+      .sort((a, b) => {
+        const aTime = a.lastMessage?.timestamp?.getTime() || 0;
+        const bTime = b.lastMessage?.timestamp?.getTime() || 0;
+        return bTime - aTime;
+      });
   }
 
   async getAllMessages(): Promise<Message[]> {

@@ -7,23 +7,27 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useWebSocket } from "@/hooks/use-websocket";
 import Login from "@/pages/login";
 import Chat from "@/pages/chat";
+import Conversations from "@/pages/conversations";
 import Admin from "@/pages/admin";
 import type { User } from "@shared/schema";
 
-type Screen = "login" | "chat" | "admin";
+type Screen = "login" | "conversations" | "chat" | "admin";
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("login");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isGodMode, setIsGodMode] = useState(false);
   const [godModeTarget, setGodModeTarget] = useState<string>("");
+  const [currentConversation, setCurrentConversation] = useState<{ userId: string; username: string } | null>(null);
 
   const { 
     isConnected, 
     messages, 
+    conversations,
     user: wsUser, 
     authenticate, 
-    sendMessage, 
+    sendMessage,
+    loadConversation,
     viewUserAsGod 
   } = useWebSocket();
 
@@ -32,7 +36,7 @@ function AppContent() {
     if (user.isAdmin) {
       setCurrentScreen("admin");
     } else {
-      setCurrentScreen("chat");
+      setCurrentScreen("conversations");
     }
   };
 
@@ -45,6 +49,7 @@ function AppContent() {
     setCurrentScreen("login");
     setIsGodMode(false);
     setGodModeTarget("");
+    setCurrentConversation(null);
   };
 
   const handleViewUser = (username: string) => {
@@ -58,6 +63,20 @@ function AppContent() {
     setIsGodMode(false);
     setGodModeTarget("");
     setCurrentScreen("admin");
+    setCurrentConversation(null);
+  };
+
+  const handleSelectConversation = async (userId: string, username: string) => {
+    setCurrentConversation({ userId, username });
+    setCurrentScreen("chat");
+    if (currentUser) {
+      await loadConversation(currentUser.id, userId);
+    }
+  };
+
+  const handleBackToConversations = () => {
+    setCurrentConversation(null);
+    setCurrentScreen(currentUser?.isAdmin ? "admin" : "conversations");
   };
 
   const handleEditMessage = async (messageId: string, content: string) => {
@@ -83,11 +102,23 @@ function AppContent() {
         />
       )}
       
-      {currentScreen === "chat" && currentUser && (
+      {currentScreen === "conversations" && currentUser && (
+        <Conversations
+          user={currentUser}
+          conversations={conversations}
+          onSelectConversation={handleSelectConversation}
+          onLogout={handleLogout}
+        />
+      )}
+      
+      {currentScreen === "chat" && currentUser && currentConversation && (
         <Chat
           user={currentUser}
           messages={messages}
+          recipientId={currentConversation.userId}
+          recipientUsername={currentConversation.username}
           onSendMessage={sendMessage}
+          onBack={handleBackToConversations}
           onLogout={handleLogout}
           isGodMode={isGodMode}
           godModeTarget={godModeTarget}

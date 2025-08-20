@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion } from "lucide-react";
+import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -11,7 +11,10 @@ import type { Message, User as UserType } from "@shared/schema";
 interface ChatProps {
   user: UserType;
   messages: Message[];
-  onSendMessage: (content: string) => void;
+  recipientId: string;
+  recipientUsername: string;
+  onSendMessage: (content: string, recipientId: string) => void;
+  onBack: () => void;
   onLogout: () => void;
   isGodMode?: boolean;
   godModeTarget?: string;
@@ -21,8 +24,11 @@ interface ChatProps {
 
 export default function Chat({ 
   user, 
-  messages, 
+  messages,
+  recipientId,
+  recipientUsername,
   onSendMessage, 
+  onBack,
   onLogout,
   isGodMode = false,
   godModeTarget,
@@ -41,7 +47,7 @@ export default function Chat({
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
     
-    onSendMessage(newMessage);
+    onSendMessage(newMessage, recipientId);
     setNewMessage("");
     
     // Reset textarea height
@@ -66,7 +72,7 @@ export default function Chat({
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
   };
 
-  const displayName = isGodMode ? godModeTarget : user.username;
+  const displayName = isGodMode ? godModeTarget : recipientUsername;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -89,13 +95,18 @@ export default function Chat({
       {/* Header */}
       <header className="bg-card border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
           <Avatar className="w-8 h-8 bg-primary">
             <AvatarFallback>
-              <User className="w-4 h-4 text-primary-foreground" />
+              {recipientUsername.split('.').map(n => n[0].toUpperCase()).join('')}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h2 className="font-semibold text-sm text-card-foreground">{displayName}</h2>
+            <h2 className="font-semibold text-sm text-card-foreground">
+              {recipientUsername.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ')}
+            </h2>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-xs text-muted-foreground">
@@ -168,7 +179,7 @@ export default function Chat({
           </div>
           <div className="text-xs text-muted-foreground">
             <ShieldQuestion className="w-3 h-3 inline mr-1" />
-            <span>3</span> online
+            <span>Private conversation</span>
           </div>
         </div>
       </div>

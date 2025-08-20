@@ -6,6 +6,7 @@ type WebSocketMessage =
   | { type: 'auth_error' }
   | { type: 'new_message'; message: Message }
   | { type: 'message_history'; messages: Message[] }
+  | { type: 'conversations_list'; conversations: Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }> }
   | { type: 'message_edited'; message: Message }
   | { type: 'message_deleted'; messageId: string }
   | { type: 'user_joined'; username: string }
@@ -16,6 +17,7 @@ export function useWebSocket() {
   const ws = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>([]);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -46,6 +48,10 @@ export function useWebSocket() {
           
         case 'message_history':
           setMessages(message.messages);
+          break;
+          
+        case 'conversations_list':
+          setConversations(message.conversations);
           break;
           
         case 'message_edited':
@@ -79,12 +85,23 @@ export function useWebSocket() {
     }
   };
 
-  const sendMessage = (content: string) => {
+  const sendMessage = (content: string, recipientId: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ 
         type: 'send_message', 
-        content 
+        content,
+        recipientId 
       }));
+    }
+  };
+
+  const loadConversation = async (userId1: string, userId2: string) => {
+    try {
+      const response = await fetch(`/api/conversations/${userId1}/${userId2}`);
+      const conversationMessages = await response.json();
+      setMessages(conversationMessages);
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
     }
   };
 
@@ -100,9 +117,11 @@ export function useWebSocket() {
   return {
     isConnected,
     messages,
+    conversations,
     user,
     authenticate,
     sendMessage,
+    loadConversation,
     viewUserAsGod,
   };
 }
