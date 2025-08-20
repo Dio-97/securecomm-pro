@@ -89,6 +89,10 @@ function AppContent() {
     setCurrentScreen(currentUser?.isAdmin ? "admin" : "conversations");
   };
 
+  const handleConversationRemoved = () => {
+    // Conversations will refresh automatically via WebSocket
+  };
+
   const handleEditMessage = async (messageId: string, content: string) => {
     if (!currentUser?.isAdmin) return;
     
@@ -119,6 +123,7 @@ function AppContent() {
           onSelectConversation={handleSelectConversation}
           onLogout={handleLogout}
           onUserUpdate={handleUserUpdate}
+          onConversationRemoved={handleConversationRemoved}
         />
       )}
       

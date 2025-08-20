@@ -148,6 +148,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove saved conversation
+  app.delete("/api/conversations/saved", async (req, res) => {
+    try {
+      const { userId, otherUserId } = req.body;
+      await storage.removeSavedConversation(userId, otherUserId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove saved conversation" });
+    }
+  });
+
   // Search users by username
   app.get("/api/users/search/:query", async (req, res) => {
     try {

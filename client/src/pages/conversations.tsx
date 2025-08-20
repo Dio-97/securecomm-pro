@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion } from "lucide-react";
+import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -9,6 +9,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { VPNStatus } from "@/components/vpn-status";
+import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Message } from "@shared/schema";
 
 interface ConversationsProps {
@@ -17,6 +18,7 @@ interface ConversationsProps {
   onSelectConversation: (userId: string, username: string) => void;
   onLogout: () => void;
   onUserUpdate?: (updatedUser: Partial<UserType>) => void;
+  onConversationRemoved?: () => void;
 }
 
 interface SearchUser {
@@ -28,7 +30,7 @@ interface SearchUser {
   location: string;
 }
 
-export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate }: ConversationsProps) {
+export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved }: ConversationsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -36,6 +38,24 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
     if (onUserUpdate) {
       onUserUpdate(newData);
+    }
+  };
+
+  const handleRemoveConversation = async (otherUserId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent conversation from opening
+    
+    try {
+      await apiRequest("DELETE", "/api/conversations/saved", {
+        userId: user.id,
+        otherUserId
+      });
+      
+      // Refresh conversations list
+      if (onConversationRemoved) {
+        onConversationRemoved();
+      }
+    } catch (error) {
+      console.error('Failed to remove conversation:', error);
     }
   };
 
@@ -189,7 +209,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
               {conversations.map((conversation) => (
                 <Card 
                   key={`conversation-${conversation.userId}`}
-                  className="cursor-pointer hover:shadow-sm transition-all"
+                  className="cursor-pointer hover:shadow-sm transition-all relative group"
                   onClick={() => onSelectConversation(conversation.userId, conversation.username)}
                 >
                   <CardContent className="p-4">
@@ -215,6 +235,14 @@ export default function Conversations({ user, conversations, onSelectConversatio
                                 {conversation.unreadCount}
                               </Badge>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={(e) => handleRemoveConversation(conversation.userId, e)}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground">@{conversation.username}</p>

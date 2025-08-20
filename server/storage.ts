@@ -21,6 +21,7 @@ export interface IStorage {
   getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>;
   clearConversation(userId1: string, userId2: string): Promise<void>;
   saveConversation(userId: string, otherUserId: string): Promise<void>;
+  removeSavedConversation(userId: string, otherUserId: string): Promise<void>;
   editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined>;
   deleteMessage(messageId: string): Promise<boolean>;
   
@@ -262,9 +263,11 @@ export class MemStorage implements IStorage {
     if (activeUsers) {
       activeUsers.delete(activeUserId);
       
-      // If no users are active in this conversation, clear it
+      // Clear conversation immediately when user leaves
+      this.clearConversation(userId1, userId2);
+      
+      // Clean up tracking if no users active
       if (activeUsers.size === 0) {
-        this.clearConversation(userId1, userId2);
         this.activeConversations.delete(conversationId);
       }
     }
@@ -359,6 +362,19 @@ export class MemStorage implements IStorage {
       };
       this.savedConversations.set(savedConversationReverse.id, savedConversationReverse);
     }
+  }
+
+  async removeSavedConversation(userId: string, otherUserId: string): Promise<void> {
+    // Remove saved conversation (both directions)
+    const toRemove = Array.from(this.savedConversations.entries())
+      .filter(([_, saved]) => 
+        (saved.userId === userId && saved.otherUserId === otherUserId) ||
+        (saved.userId === otherUserId && saved.otherUserId === userId)
+      );
+    
+    toRemove.forEach(([id, _]) => {
+      this.savedConversations.delete(id);
+    });
   }
 
   async getAllMessages(): Promise<Message[]> {
