@@ -5,6 +5,12 @@ import { storage } from "./storage";
 import { loginSchema, insertMessageSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
+import { qrService } from "./qr-service";
+import { wireGuardService } from "./wireguard-service";
+import { dnsService } from "./dns-service";
+import { fileService } from "./file-service";
+import express from "express";
+import multer from "multer";
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
@@ -14,6 +20,12 @@ interface AuthenticatedWebSocket extends WebSocket {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Configure multer for file uploads
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  });
   
   // WebSocket server for real-time messaging
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
@@ -292,6 +304,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to rotate VPN" });
+    }
+  });
+
+  // QR Code Generation and Verification
+  app.post("/api/qr/generate", async (req, res) => {
+    try {
+      const { userId, username, publicKey } = req.body;
+      const qrCode = await qrService.generateVerificationQR(userId, username, publicKey);
+      res.json({ qrCode });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate QR code" });
+    }
+  });
+
+  app.post("/api/qr/verify", (req, res) => {
+    try {
+      const { qrData } = req.body;
+      const result = qrService.verifyQRCode(qrData);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to verify QR code" });
+    }
+  });
+
+  app.post("/api/qr/conversation", async (req, res) => {
+    try {
+      const { senderId, senderUsername, recipientId, recipientUsername } = req.body;
+      const qrCode = await qrService.generateConversationVerificationQR(
+        senderId, senderUsername, recipientId, recipientUsername
+      );
+      res.json({ qrCode });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate conversation QR code" });
+    }
+  });
+
+  // WireGuard VPN Integration
+  app.post("/api/vpn/connect", async (req, res) => {
+    try {
+      const { userId, serverId } = req.body;
+      const connection = await wireGuardService.connectVPN(userId, serverId);
+      res.json(connection);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to connect to VPN" });
+    }
+  });
+
+  app.post("/api/vpn/disconnect", async (req, res) => {
+    try {
+      const { connectionId } = req.body;
+      const result = await wireGuardService.disconnectVPN(connectionId);
+      res.json({ success: result });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to disconnect from VPN" });
+    }
+  });
+
+  app.get("/api/vpn/status/:userId", (req, res) => {
+    try {
+      const { userId } = req.params;
+      const connections = wireGuardService.getConnectionStatus(userId);
+      res.json(connections);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get VPN status" });
+    }
+  });
+
+  // DNS Protection
+  app.post("/api/dns/resolve", async (req, res) => {
+    try {
+      const { domain, type = 'A', userId } = req.body;
+      const result = await dnsService.resolveDomain(domain, type, userId);
+      res.json({ domain, result });
+    } catch (error) {
+      res.status(500).json({ error: "DNS resolution failed" });
+    }
+  });
+
+  app.get("/api/dns/stats/:userId?", (req, res) => {
+    try {
+      const { userId } = req.params;
+      const stats = dnsService.getStats(userId);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get DNS stats" });
+    }
+  });
+
+  app.post("/api/dns/block", (req, res) => {
+    try {
+      const { domain } = req.body;
+      dnsService.blockDomain(domain);
+      res.json({ success: true, message: `Domain ${domain} blocked` });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to block domain" });
+    }
+  });
+
+  // File Sharing with Encryption
+  app.post("/api/files/upload", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      const { conversationId, expirationHours = 24, maxDownloads = 10 } = req.body;
+      const { originalname, mimetype, buffer } = req.file;
+      const uploadedBy = (req as any).session?.user?.id;
+
+      if (!uploadedBy) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const result = await fileService.uploadFile(
+        buffer,
+        originalname,
+        mimetype,
+        uploadedBy,
+        conversationId,
+        parseInt(expirationHours),
+        parseInt(maxDownloads)
+      );
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
+  app.get("/api/files/download/:fileId", async (req, res) => {
+    try {
+      const { fileId } = req.params;
+      const userId = (req as any).session?.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const result = await fileService.downloadFile(fileId, userId);
+      if (!result) {
+        return res.status(404).json({ error: "File not found or expired" });
+      }
+
+      const { buffer, metadata } = result;
+      
+      res.setHeader('Content-Type', metadata.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${metadata.originalName}"`);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to download file" });
+    }
+  });
+
+  app.get("/api/files/conversation/:conversationId", (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const userId = (req as any).session?.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const files = fileService.getConversationFiles(conversationId, userId);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get conversation files" });
+    }
+  });
+
+  app.delete("/api/files/:fileId", async (req, res) => {
+    try {
+      const { fileId } = req.params;
+      const userId = (req as any).session?.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const result = await fileService.deleteFile(fileId, userId);
+      res.json({ success: result });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete file" });
     }
   });
 

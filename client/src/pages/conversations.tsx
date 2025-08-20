@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X } from "lucide-react";
+import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { VPNStatus } from "@/components/vpn-status";
 import { PresenceIndicator } from "@/components/presence-indicator";
+import { SecurityPanel } from "@/components/SecurityPanel";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Message } from "@shared/schema";
 
@@ -35,6 +36,7 @@ interface SearchUser {
 export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved, getUserPresenceStatus }: ConversationsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
@@ -120,12 +122,17 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <Plus className="w-4 h-4" />
           </Button>
           
-          <Button variant="ghost" size="sm" onClick={toggleTheme}>
-            {theme === 'dark' ? "☀️" : "🌙"}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowSecurityPanel(true)}
+            title="Security & Protection Center"
+          >
+            <Shield className="w-4 h-4" />
           </Button>
           
-          <Button variant="ghost" size="sm">
-            <Settings className="w-4 h-4" />
+          <Button variant="ghost" size="sm" onClick={toggleTheme}>
+            {theme === 'dark' ? "☀️" : "🌙"}
           </Button>
           
           <Button variant="ghost" size="sm" onClick={onLogout}>
@@ -288,6 +295,13 @@ export default function Conversations({ user, conversations, onSelectConversatio
           </div>
         </div>
       </div>
+
+      {/* Security Panel */}
+      <SecurityPanel 
+        userId={user.id}
+        isVisible={showSecurityPanel}
+        onClose={() => setShowSecurityPanel(false)}
+      />
     </div>
   );
 }

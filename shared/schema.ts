@@ -17,6 +17,15 @@ export const users = pgTable("users", {
   maskedIp: text("masked_ip"),
   vpnServer: text("vpn_server"),
   vpnCountry: text("vpn_country"),
+  // Signal Protocol keys
+  identityKey: text("identity_key"),
+  publicKey: text("public_key"),
+  privateKey: text("private_key"),
+  signedPreKey: text("signed_pre_key"),
+  oneTimeKeys: text("one_time_keys"),
+  // QR verification
+  verificationQR: text("verification_qr"),
+  isVerified: boolean("is_verified").default(false),
 });
 
 export const messages = pgTable("messages", {
@@ -29,6 +38,10 @@ export const messages = pgTable("messages", {
   isEncrypted: boolean("is_encrypted").default(true),
   editedBy: varchar("edited_by").references(() => users.id),
   editedAt: timestamp("edited_at"),
+  // E2E Encryption
+  encryptedContent: text("encrypted_content"),
+  sessionId: text("session_id"),
+  messageKey: text("message_key"),
 });
 
 export const invitations = pgTable("invitations", {
@@ -44,6 +57,37 @@ export const savedConversations = pgTable("saved_conversations", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   otherUserId: varchar("other_user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // E2E Session management
+  sessionKey: text("session_key"),
+  isVerified: boolean("is_verified").default(false),
+});
+
+export const sharedFiles = pgTable("shared_files", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  fileSize: text("file_size").notNull(),
+  mimeType: text("mime_type").notNull(),
+  uploadedBy: varchar("uploaded_by").references(() => users.id).notNull(),
+  conversationId: text("conversation_id").notNull(),
+  encryptionKey: text("encryption_key").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  downloadCount: text("download_count").default("0"),
+  maxDownloads: text("max_downloads").default("10"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const cryptoSessions = pgTable("crypto_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId1: varchar("user_id_1").references(() => users.id).notNull(),
+  userId2: varchar("user_id_2").references(() => users.id).notNull(),
+  sessionState: text("session_state").notNull(),
+  ratchetKey: text("ratchet_key").notNull(),
+  messageNumber: text("message_number").default("0"),
+  previousCounter: text("previous_counter").default("0"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsed: timestamp("last_used").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -65,4 +109,6 @@ export type User = typeof users.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 export type SavedConversation = typeof savedConversations.$inferSelect;
+export type SharedFile = typeof sharedFiles.$inferSelect;
+export type CryptoSession = typeof cryptoSessions.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;

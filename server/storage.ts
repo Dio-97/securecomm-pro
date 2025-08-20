@@ -1,4 +1,4 @@
-import { type User, type Message, type InsertUser, type Invitation, type SavedConversation } from "@shared/schema";
+import { type User, type Message, type InsertUser, type Invitation, type SavedConversation, type SharedFile, type CryptoSession } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
 
@@ -77,6 +77,14 @@ export class MemStorage implements IStorage {
       maskedIp: adminMaskedIp,
       vpnServer: adminVpnServer.name,
       vpnCountry: adminVpnServer.country,
+      // Crypto fields - will be populated properly later
+      identityKey: null,
+      publicKey: null,
+      privateKey: null,
+      signedPreKey: null,
+      oneTimeKeys: null,
+      verificationQR: null,
+      isVerified: true,
     };
     this.users.set(adminId, admin);
     
@@ -106,6 +114,14 @@ export class MemStorage implements IStorage {
         maskedIp,
         vpnServer: vpnServer.name,
         vpnCountry: vpnServer.country,
+        // Crypto fields - will be populated properly later
+        identityKey: null,
+        publicKey: null,
+        privateKey: null,
+        signedPreKey: null,
+        oneTimeKeys: null,
+        verificationQR: null,
+        isVerified: false,
       };
       this.users.set(id, demoUser);
     });
@@ -132,6 +148,14 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id,
       isAdmin: false,
+      // Crypto fields - will be populated properly later
+      identityKey: null,
+      publicKey: null,
+      privateKey: null,
+      signedPreKey: null,
+      oneTimeKeys: null,
+      verificationQR: null,
+      isVerified: false,
       isInvited: insertUser.isInvited || false,
       invitedBy: insertUser.invitedBy || null,
       lastActivity: new Date(),
@@ -232,6 +256,10 @@ export class MemStorage implements IStorage {
       isEncrypted: true,
       editedBy: null,
       editedAt: null,
+      // Crypto fields - will be populated properly later
+      encryptedContent: null,
+      sessionId: null,
+      messageKey: null,
     };
     this.messages.set(id, newMessage);
     
@@ -358,7 +386,9 @@ export class MemStorage implements IStorage {
         id: randomUUID(),
         userId,
         otherUserId,
-        createdAt: new Date()
+        createdAt: new Date(),
+        sessionKey: null,
+        isVerified: false
       };
       this.savedConversations.set(savedConversation.id, savedConversation);
     }
@@ -368,7 +398,9 @@ export class MemStorage implements IStorage {
         id: randomUUID(),
         userId: otherUserId,
         otherUserId: userId,
-        createdAt: new Date()
+        createdAt: new Date(),
+        sessionKey: null,
+        isVerified: false
       };
       this.savedConversations.set(savedConversationReverse.id, savedConversationReverse);
     }

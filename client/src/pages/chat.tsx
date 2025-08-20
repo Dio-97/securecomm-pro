@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft } from "lucide-react";
+import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, QrCode, Shield, FileUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
 import { MessageBubble } from "@/components/message-bubble";
 import { WalkieTalkie, useAudioPlayer } from "@/components/walkie-talkie";
 import { PresenceIndicator } from "@/components/presence-indicator";
+import { QRCodeModal } from "@/components/QRCodeModal";
+import { SecurityPanel } from "@/components/SecurityPanel";
 import type { Message, User as UserType } from "@shared/schema";
 
 interface ChatProps {
@@ -42,8 +45,15 @@ export default function Chat({
   onSendAudio
 }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrMode, setQRMode] = useState<'generate' | 'scan'>('generate');
+  const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [isConversationVerified, setIsConversationVerified] = useState(false);
+  const [isFirstMessage, setIsFirstMessage] = useState(messages.length === 0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme, toggleTheme } = useTheme();
   const { playAudioData } = useAudioPlayer();
 
@@ -66,8 +76,16 @@ export default function Chat({
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
     
+    // Check if this is the first message and conversation needs verification
+    if (isFirstMessage && !isConversationVerified) {
+      setQRMode('generate');
+      setShowQRModal(true);
+      return;
+    }
+    
     onSendMessage(newMessage, recipientId);
     setNewMessage("");
+    setIsFirstMessage(false);
     
     // Reset textarea height
     if (textareaRef.current) {
@@ -92,6 +110,62 @@ export default function Chat({
   };
 
   const displayName = isGodMode ? godModeTarget : recipientUsername;
+
+  // Handle QR code verification
+  const handleQRGenerated = async (qrCode: string) => {
+    // QR code generated for recipient to scan
+    console.log('QR code generated for conversation verification');
+  };
+
+  const handleQRScanned = async (result: any) => {
+    if (result.isValid) {
+      setIsConversationVerified(true);
+      setShowQRModal(false);
+      // Now send the pending message
+      if (newMessage.trim()) {
+        onSendMessage(newMessage, recipientId);
+        setNewMessage("");
+        setIsFirstMessage(false);
+      }
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('conversationId', `${user.id}-${recipientId}`);
+    formData.append('expirationHours', '24');
+    formData.append('maxDownloads', '10');
+
+    try {
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Send file share message
+        onSendMessage(`📎 Shared file: ${result.filename} (expires ${new Date(result.expiresAt).toLocaleString()})`, recipientId);
+      }
+    } catch (error) {
+      console.error('File upload failed:', error);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setShowFileUpload(false);
+  };
+
+  useEffect(() => {
+    setIsFirstMessage(messages.length === 0);
+  }, [messages.length]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -137,12 +211,38 @@ export default function Chat({
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="sm" onClick={toggleTheme}>
-            {theme === 'dark' ? "☀️" : "🌙"}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowSecurityPanel(true)}
+            title="Security & Protection"
+          >
+            <Shield className="w-4 h-4" />
           </Button>
           
-          <Button variant="ghost" size="sm">
-            <Settings className="w-4 h-4" />
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowFileUpload(true)}
+            title="Share Encrypted File"
+          >
+            <FileUp className="w-4 h-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              setQRMode('generate');
+              setShowQRModal(true);
+            }}
+            title="Generate QR Code"
+          >
+            <QrCode className="w-4 h-4" />
+          </Button>
+          
+          <Button variant="ghost" size="sm" onClick={toggleTheme}>
+            {theme === 'dark' ? "☀️" : "🌙"}
           </Button>
           
           <Button variant="ghost" size="sm" onClick={onLogout}>
@@ -202,6 +302,67 @@ export default function Chat({
           </div>
         </div>
       </div>
+
+      {/* Security Panel */}
+      <SecurityPanel 
+        userId={user.id}
+        isVisible={showSecurityPanel}
+        onClose={() => setShowSecurityPanel(false)}
+      />
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        mode={qrMode}
+        onQRGenerated={handleQRGenerated}
+        onQRScanned={handleQRScanned}
+        generationData={{
+          userId: user.id,
+          username: user.username,
+          publicKey: user.publicKey || 'demo-key'
+        }}
+        title={isFirstMessage ? 'Verify Identity for New Conversation' : 'Identity Verification'}
+      />
+
+      {/* File Upload Modal */}
+      {showFileUpload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <FileUp className="w-5 h-5" />
+                Share Encrypted File
+              </h3>
+              <Button 
+                onClick={() => setShowFileUpload(false)} 
+                variant="ghost" 
+                size="sm"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Files are encrypted with AES-256 and automatically deleted after 24 hours or 10 downloads.
+              </div>
+              
+              <Input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileUpload}
+                className="w-full"
+                accept="*/*"
+              />
+              
+              <div className="text-xs text-gray-500">
+                Maximum file size: 50MB
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
