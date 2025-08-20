@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, QrCode, Shield, FileUp, X } from "lucide-react";
+import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, QrCode, Shield, FileUp, X, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -47,10 +47,13 @@ export default function Chat({
   const [newMessage, setNewMessage] = useState("");
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrMode, setQRMode] = useState<'generate' | 'scan'>('generate');
+  const [qrPurpose, setQRPurpose] = useState<'message' | 'file'>('message');
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [isConversationVerified, setIsConversationVerified] = useState(false);
   const [isFirstMessage, setIsFirstMessage] = useState(messages.length === 0);
+  const [isFirstFileShare, setIsFirstFileShare] = useState(true);
+  const [pendingFileUpload, setPendingFileUpload] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +81,7 @@ export default function Chat({
     
     // Check if this is the first message and conversation needs verification
     if (isFirstMessage && !isConversationVerified) {
+      setQRPurpose('message');
       setQRMode('generate');
       setShowQRModal(true);
       return;
@@ -121,20 +125,45 @@ export default function Chat({
     if (result.isValid) {
       setIsConversationVerified(true);
       setShowQRModal(false);
-      // Now send the pending message
-      if (newMessage.trim()) {
-        onSendMessage(newMessage, recipientId);
-        setNewMessage("");
-        setIsFirstMessage(false);
+      
+      // Handle based on the purpose
+      if (qrPurpose === 'message') {
+        // Send the pending message
+        if (newMessage.trim()) {
+          onSendMessage(newMessage, recipientId);
+          setNewMessage("");
+          setIsFirstMessage(false);
+        }
+      } else if (qrPurpose === 'file') {
+        // Upload the pending file
+        if (pendingFileUpload) {
+          await uploadFile(pendingFileUpload);
+        }
       }
     }
   };
 
-  // Handle file upload
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection (not upload yet)
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Check if this is the first file share and conversation needs verification
+    if (isFirstFileShare && !isConversationVerified) {
+      setPendingFileUpload(file);
+      setQRPurpose('file');
+      setQRMode('generate');
+      setShowQRModal(true);
+      setShowFileUpload(false);
+      return;
+    }
+
+    // If already verified, upload immediately
+    uploadFile(file);
+  };
+
+  // Actual file upload function
+  const uploadFile = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('conversationId', `${user.id}-${recipientId}`);
@@ -151,6 +180,7 @@ export default function Chat({
         const result = await response.json();
         // Send file share message
         onSendMessage(`📎 Shared file: ${result.filename} (expires ${new Date(result.expiresAt).toLocaleString()})`, recipientId);
+        setIsFirstFileShare(false);
       }
     } catch (error) {
       console.error('File upload failed:', error);
@@ -161,10 +191,15 @@ export default function Chat({
       fileInputRef.current.value = '';
     }
     setShowFileUpload(false);
+    setPendingFileUpload(null);
   };
 
   useEffect(() => {
     setIsFirstMessage(messages.length === 0);
+    // Reset file sharing state when conversation changes
+    if (messages.length > 0) {
+      setIsFirstFileShare(false);
+    }
   }, [messages.length]);
 
   return (
@@ -233,12 +268,13 @@ export default function Chat({
             variant="ghost" 
             size="sm" 
             onClick={() => {
+              setQRPurpose('message');
               setQRMode('generate');
               setShowQRModal(true);
             }}
-            title="Generate QR Code"
+            title="Generate Message QR Code"
           >
-            <QrCode className="w-4 h-4" />
+            <MessageCircle className="w-4 h-4" />
           </Button>
           
           <Button variant="ghost" size="sm" onClick={toggleTheme}>
@@ -322,7 +358,11 @@ export default function Chat({
           username: user.username,
           publicKey: user.publicKey || 'demo-key'
         }}
-        title={isFirstMessage ? 'Verify Identity for New Conversation' : 'Identity Verification'}
+        title={
+          qrPurpose === 'message' 
+            ? (isFirstMessage ? 'Verify Identity for New Conversation' : 'Identity Verification for Message')
+            : 'Verify Identity for File Sharing'
+        }
       />
 
       {/* File Upload Modal */}
@@ -334,13 +374,28 @@ export default function Chat({
                 <FileUp className="w-5 h-5" />
                 Share Encrypted File
               </h3>
-              <Button 
-                onClick={() => setShowFileUpload(false)} 
-                variant="ghost" 
-                size="sm"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => {
+                    setQRPurpose('file');
+                    setQRMode('generate');
+                    setShowQRModal(true);
+                    setShowFileUpload(false);
+                  }} 
+                  variant="ghost" 
+                  size="sm"
+                  title="Generate File QR Code"
+                >
+                  <QrCode className="w-4 h-4" />
+                </Button>
+                <Button 
+                  onClick={() => setShowFileUpload(false)} 
+                  variant="ghost" 
+                  size="sm"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-4">
@@ -351,7 +406,7 @@ export default function Chat({
               <Input
                 ref={fileInputRef}
                 type="file"
-                onChange={handleFileUpload}
+                onChange={handleFileSelection}
                 className="w-full"
                 accept="*/*"
               />
