@@ -195,21 +195,21 @@ export function SecurityPanel({ userId, isVisible, onClose }: SecurityPanelProps
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="vpn" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TabsContent value="vpn" className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">VPN Connection</CardTitle>
+                  <CardHeader className="pb-1 pt-3">
+                    <CardTitle className="text-xs">VPN Connection</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 py-3">
+                  <CardContent className="space-y-1 py-1 pb-2">
                     {vpnStatus.length === 0 ? (
-                      <div className="text-center py-2">
-                        <p className="text-gray-500 mb-2 text-sm">No active VPN connections</p>
-                        <div className="space-y-2">
+                      <div className="text-center py-1">
+                        <p className="text-gray-500 mb-1 text-xs">No active connections</p>
+                        <div className="space-y-1">
                           <select 
                             value={selectedServer} 
                             onChange={(e) => setSelectedServer(e.target.value)}
-                            className="w-full p-1.5 border rounded text-sm"
+                            className="w-full p-1 border rounded text-xs"
                           >
                             {servers.map(server => (
                               <option key={server.id} value={server.id}>
@@ -220,29 +220,29 @@ export function SecurityPanel({ userId, isVisible, onClose }: SecurityPanelProps
                           <Button 
                             onClick={connectVPN} 
                             disabled={isConnectingVPN}
-                            className="w-full h-8 text-sm"
+                            className="w-full h-6 text-xs"
                             size="sm"
                           >
                             {isConnectingVPN ? (
-                              <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                              <RefreshCw className="w-2 h-2 mr-1 animate-spin" />
                             ) : (
-                              <Wifi className="w-3 h-3 mr-1" />
+                              <Wifi className="w-2 h-2 mr-1" />
                             )}
-                            Connect VPN
+                            Connect
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         {vpnStatus.map((conn) => (
-                          <div key={conn.id} className="border rounded-lg p-2">
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2">
+                          <div key={conn.id} className="border rounded p-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
                                 {getStatusIcon(conn.status)}
                                 <span className="text-xs font-medium">
-                                  Server {conn.serverId}
+                                  {conn.serverId}
                                 </span>
-                                <Badge variant="secondary" className={`text-xs px-1 py-0 ${getStatusColor(conn.status)}`}>
+                                <Badge variant="secondary" className={`text-xs px-1 py-0 h-4 ${getStatusColor(conn.status)}`}>
                                   {conn.status}
                                 </Badge>
                               </div>
@@ -251,19 +251,16 @@ export function SecurityPanel({ userId, isVisible, onClose }: SecurityPanelProps
                                   onClick={() => disconnectVPN(conn.id)}
                                   variant="outline" 
                                   size="sm"
-                                  className="h-6 px-2 text-xs"
+                                  className="h-4 px-1 text-xs"
                                 >
-                                  Disconnect
+                                  Disc
                                 </Button>
                               )}
                             </div>
                             
-                            <div className="text-xs text-gray-600 space-y-0.5">
-                              <div className="truncate">Endpoint: {conn.endpoint}</div>
-                              <div className="flex justify-between">
-                                <span>↓ {formatBytes(conn.bytesReceived)}</span>
-                                <span>↑ {formatBytes(conn.bytesSent)}</span>
-                              </div>
+                            <div className="text-xs text-gray-600 flex justify-between mt-0.5">
+                              <span>↓ {formatBytes(conn.bytesReceived)}</span>
+                              <span>↑ {formatBytes(conn.bytesSent)}</span>
                             </div>
                           </div>
                         ))}
@@ -273,16 +270,16 @@ export function SecurityPanel({ userId, isVisible, onClose }: SecurityPanelProps
                 </Card>
 
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Kill Switch Status</CardTitle>
+                  <CardHeader className="pb-1 pt-3">
+                    <CardTitle className="text-xs">Kill Switch Status</CardTitle>
                   </CardHeader>
-                  <CardContent className="py-3">
-                    <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-sm">Active - Traffic protected</span>
+                  <CardContent className="py-1 pb-2">
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span className="text-xs">Active - Protected</span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      All internet traffic is blocked if VPN disconnects
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Traffic blocked if VPN disconnects
                     </p>
                   </CardContent>
                 </Card>
