@@ -17,7 +17,6 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
   const [step, setStep] = useState<"username" | "password">("username");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -34,10 +33,10 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
   };
 
   const handleLogin = async () => {
-    if (!password || twoFactorCode.length !== 6) {
+    if (!password) {
       toast({
         title: "Error",
-        description: "Please fill in all fields with valid values",
+        description: "Please enter your password",
         variant: "destructive",
       });
       return;
@@ -45,7 +44,7 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
 
     setLoading(true);
     try {
-      const result = await login({ username, password, twoFactorCode });
+      const result = await login({ username, password });
       onLogin(result.user);
       onWebSocketAuth(username, password);
     } catch (error: any) {
@@ -62,7 +61,6 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
   const handleBack = () => {
     setStep("username");
     setPassword("");
-    setTwoFactorCode("");
   };
 
   return (
@@ -119,19 +117,6 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="twoFactor" className="text-muted-foreground">2FA Code</Label>
-                  <Input
-                    id="twoFactor"
-                    type="text"
-                    value={twoFactorCode}
-                    onChange={(e) => setTwoFactorCode(e.target.value)}
-                    placeholder="6-digit code"
-                    maxLength={6}
-                    className="mt-2"
-                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                  />
-                </div>
                 
                 <Button 
                   onClick={handleLogin} 

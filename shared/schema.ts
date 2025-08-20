@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   isAdmin: boolean("is_admin").default(false),
   isInvited: boolean("is_invited").default(false),
-  invitedBy: varchar("invited_by").references(() => users.id),
+  invitedBy: varchar("invited_by"),
   lastActivity: timestamp("last_activity").defaultNow(),
   location: text("location"),
   messageCount: text("message_count").default("0"),
@@ -46,7 +46,6 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 export const loginSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
-  twoFactorCode: z.string().length(6),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

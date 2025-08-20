@@ -125,7 +125,7 @@ export class MemStorage implements IStorage {
     
     // Update user message count
     const user = this.users.get(message.userId);
-    if (user) {
+    if (user && user.messageCount) {
       user.messageCount = (parseInt(user.messageCount) + 1).toString();
       this.users.set(message.userId, user);
     }

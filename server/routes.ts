@@ -22,16 +22,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication endpoint
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { username, password, twoFactorCode } = loginSchema.parse(req.body);
+      const { username, password } = loginSchema.parse(req.body);
       
       const user = await storage.getUserByUsername(username);
       if (!user || user.password !== password) {
         return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      // For demo purposes, accept any 6-digit code
-      if (twoFactorCode.length !== 6) {
-        return res.status(401).json({ message: "Invalid 2FA code" });
       }
       
       // Update user activity
@@ -146,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (user && user.password === message.password) {
               ws.userId = user.id;
               ws.username = user.username;
-              ws.isAdmin = user.isAdmin;
+              ws.isAdmin = user.isAdmin || false;
               connectedClients.add(ws);
               
               ws.send(JSON.stringify({ 
