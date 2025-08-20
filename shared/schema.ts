@@ -39,6 +39,13 @@ export const invitations = pgTable("invitations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const savedConversations = pgTable("saved_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  otherUserId: varchar("other_user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -57,4 +64,5 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
+export type SavedConversation = typeof savedConversations.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;

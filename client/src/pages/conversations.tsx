@@ -44,7 +44,18 @@ export default function Conversations({ user, conversations, onSelectConversatio
     enabled: searchQuery.length > 2,
   });
 
-  const handleStartConversation = (userId: string, username: string) => {
+  const handleStartConversation = async (userId: string, username: string) => {
+    // Save the conversation when starting it for the first time
+    try {
+      await fetch('/api/conversations/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, otherUserId: userId })
+      });
+    } catch (error) {
+      console.error('Failed to save conversation:', error);
+    }
+    
     onSelectConversation(userId, username);
     setShowSearch(false);
     setSearchQuery("");

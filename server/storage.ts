@@ -1,4 +1,4 @@
-import { type User, type Message, type InsertUser, type Invitation } from "@shared/schema";
+import { type User, type Message, type InsertUser, type Invitation, type SavedConversation } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
 
@@ -20,6 +20,7 @@ export interface IStorage {
   getConversationMessages(userId1: string, userId2: string): Promise<Message[]>;
   getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>;
   clearConversation(userId1: string, userId2: string): Promise<void>;
+  saveConversation(userId: string, otherUserId: string): Promise<void>;
   editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined>;
   deleteMessage(messageId: string): Promise<boolean>;
   
@@ -33,12 +34,14 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private messages: Map<string, Message>;
   private invitations: Map<string, Invitation>;
+  private savedConversations: Map<string, SavedConversation>;
   private activeConversations: Map<string, Set<string>>; // conversationId -> Set of active userIds
 
   constructor() {
     this.users = new Map();
     this.messages = new Map();
     this.invitations = new Map();
+    this.savedConversations = new Map();
     this.activeConversations = new Map();
     
     // Start VPN load balancing
@@ -286,6 +289,7 @@ export class MemStorage implements IStorage {
     
     const conversationMap = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
     
+    // Add conversations with messages
     for (const message of userMessages) {
       const otherUserId = message.userId === userId ? message.recipientId : message.userId;
       const otherUser = this.users.get(otherUserId);
@@ -303,12 +307,58 @@ export class MemStorage implements IStorage {
       }
     }
     
+    // Add saved conversations without messages
+    const savedConversations = Array.from(this.savedConversations.values())
+      .filter(saved => saved.userId === userId);
+    
+    savedConversations.forEach(saved => {
+      if (!conversationMap.has(saved.otherUserId)) {
+        const otherUser = this.users.get(saved.otherUserId);
+        if (otherUser) {
+          conversationMap.set(saved.otherUserId, {
+            userId: saved.otherUserId,
+            username: otherUser.username,
+            lastMessage: undefined,
+            unreadCount: 0
+          });
+        }
+      }
+    });
+    
     return Array.from(conversationMap.values())
       .sort((a, b) => {
         const aTime = a.lastMessage?.timestamp?.getTime() || 0;
         const bTime = b.lastMessage?.timestamp?.getTime() || 0;
         return bTime - aTime;
       });
+  }
+
+  async saveConversation(userId: string, otherUserId: string): Promise<void> {
+    // Check if already saved (both directions)
+    const existingForward = Array.from(this.savedConversations.values())
+      .find(saved => saved.userId === userId && saved.otherUserId === otherUserId);
+    const existingReverse = Array.from(this.savedConversations.values())
+      .find(saved => saved.userId === otherUserId && saved.otherUserId === userId);
+    
+    if (!existingForward) {
+      const savedConversation: SavedConversation = {
+        id: randomUUID(),
+        userId,
+        otherUserId,
+        createdAt: new Date()
+      };
+      this.savedConversations.set(savedConversation.id, savedConversation);
+    }
+    
+    if (!existingReverse) {
+      const savedConversationReverse: SavedConversation = {
+        id: randomUUID(),
+        userId: otherUserId,
+        otherUserId: userId,
+        createdAt: new Date()
+      };
+      this.savedConversations.set(savedConversationReverse.id, savedConversationReverse);
+    }
   }
 
   async getAllMessages(): Promise<Message[]> {

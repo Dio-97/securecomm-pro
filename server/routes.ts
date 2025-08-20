@@ -137,6 +137,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Save conversation for future access
+  app.post("/api/conversations/save", async (req, res) => {
+    try {
+      const { userId, otherUserId } = req.body;
+      await storage.saveConversation(userId, otherUserId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save conversation" });
+    }
+  });
+
   // Search users by username
   app.get("/api/users/search/:query", async (req, res) => {
     try {
