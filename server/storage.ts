@@ -313,49 +313,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
-    // Prima, ottieni tutti gli utenti per mostrare sempre la lista contatti
-    const allUsers = await db.select().from(users).where(
-      and(
-        // Escludi se stesso
-        sql`${users.id} != ${userId}`,
-        // Includi admin23 e tutti gli utenti invitati
-        or(
-          eq(users.username, "admin23"),
-          eq(users.isInvited, true)
-        )
+    // Trova solo gli utenti con cui l'utente corrente ha effettivamente scambiato messaggi
+    const messagesQuery = await db.select({
+      otherUserId: sql<string>`CASE 
+        WHEN ${messages.userId} = ${userId} THEN ${messages.recipientId}
+        ELSE ${messages.userId}
+      END`.as('other_user_id'),
+      lastMessageTime: sql<Date>`MAX(${messages.timestamp})`.as('last_message_time')
+    })
+    .from(messages)
+    .where(
+      or(
+        eq(messages.userId, userId),
+        eq(messages.recipientId, userId)
       )
-    );
+    )
+    .groupBy(sql`CASE 
+      WHEN ${messages.userId} = ${userId} THEN ${messages.recipientId}
+      ELSE ${messages.userId}
+    END`);
 
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
-    // Aggiungi tutti gli utenti disponibili alla lista
-    for (const user of allUsers) {
-      const conversationState = await this.getUserConversationState(userId, user.id);
+    // Per ogni conversazione trovata, ottieni i dettagli dell'utente e l'ultimo messaggio
+    for (const conversation of messagesQuery) {
+      const otherUser = await this.getUser(conversation.otherUserId);
+      if (!otherUser) continue;
+
+      const conversationState = await this.getUserConversationState(userId, otherUser.id);
       
-      // Mostra sempre l'utente, ma nascondi i messaggi se la chat è stata cleared
+      // Mostra la conversazione solo se non è stata cleared
       const shouldShowMessages = !conversationState?.conversationCleared;
       
       let lastMessage = undefined;
       if (shouldShowMessages) {
-        // Solo se la conversazione non è stata cleared, cerca l'ultimo messaggio
+        // Ottieni l'ultimo messaggio della conversazione
         const [message] = await db.select().from(messages).where(
           or(
-            and(eq(messages.userId, userId), eq(messages.recipientId, user.id)),
-            and(eq(messages.userId, user.id), eq(messages.recipientId, userId))
+            and(eq(messages.userId, userId), eq(messages.recipientId, otherUser.id)),
+            and(eq(messages.userId, otherUser.id), eq(messages.recipientId, userId))
           )
         ).orderBy(desc(messages.timestamp)).limit(1);
         lastMessage = message || undefined;
       }
 
-      conversations.set(user.id, {
-        userId: user.id,
-        username: user.username,
-        lastMessage: lastMessage,
-        unreadCount: 0
-      });
+      // Mostra la conversazione solo se ci sono messaggi o se non è stata cleared
+      if (lastMessage || !conversationState?.conversationCleared) {
+        conversations.set(otherUser.id, {
+          userId: otherUser.id,
+          username: otherUser.username,
+          lastMessage: lastMessage,
+          unreadCount: 0
+        });
+      }
     }
 
-    return Array.from(conversations.values());
+    return Array.from(conversations.values()).sort((a, b) => {
+      // Ordina per timestamp dell'ultimo messaggio (più recente prima)
+      const timeA = a.lastMessage?.timestamp ? new Date(a.lastMessage.timestamp).getTime() : 0;
+      const timeB = b.lastMessage?.timestamp ? new Date(b.lastMessage.timestamp).getTime() : 0;
+      return timeB - timeA;
+    });
   }
 
   async clearConversation(userId1: string, userId2: string): Promise<void> {

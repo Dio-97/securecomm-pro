@@ -798,11 +798,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } 
               }));
               
-              // Send user's conversations instead of all messages
-              const conversations = await storage.getConversations(user.id);
+              // Send user's personal conversations only
+              const personalConversations = await storage.getConversations(user.id);
               ws.send(JSON.stringify({ 
                 type: 'conversations_list', 
-                conversations 
+                conversations: personalConversations 
               }));
               
               // Broadcast user presence update
