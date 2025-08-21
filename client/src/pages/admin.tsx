@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminUser {
   id: string;
@@ -27,6 +28,7 @@ interface AdminProps {
 
 export default function Admin({ onLogout, onViewUser, onMonitorSessions }: AdminProps) {
   const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -234,15 +236,27 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                     
                     if (response.ok) {
                       const result = await response.json();
-                      alert(`Utente creato!\nUsername: ${result.credentials.username}\nPassword: ${result.credentials.password}`);
+                      toast({
+                        title: "✅ Utente creato con successo!",
+                        description: `Username: ${result.credentials.username}\nPassword: ${result.credentials.password}`,
+                        duration: 8000,
+                      });
                       // Ricarica la lista utenti
                       window.location.reload();
                     } else {
-                      alert('Errore nella creazione utente');
+                      toast({
+                        title: "❌ Errore",
+                        description: "Impossibile creare l'utente",
+                        variant: "destructive",
+                      });
                     }
                   } catch (error) {
                     console.error('Error creating random user:', error);
-                    alert('Errore di rete');
+                    toast({
+                      title: "❌ Errore di rete",
+                      description: "Verifica la connessione e riprova",
+                      variant: "destructive",
+                    });
                   }
                 }}
                 className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700"
