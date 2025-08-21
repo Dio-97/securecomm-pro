@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query } = req.params;
       
-      if (!query || query.length < 2) {
+      if (!query || query.length < 1) {
         return res.json([]);
       }
       
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         initials: user.username.split(/[._\-]/).map(n => n[0]?.toUpperCase() || '').join('').slice(0, 2),
         name: user.username.split(/[._\-]/).map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' '),
-        lastActivity: user.lastActivity ? format(new Date(user.lastActivity), "dd/MM/yyyy HH:mm") : "Mai",
+        lastActivity: user.lastActivity ? new Date(user.lastActivity).toLocaleString('it-IT') : "Mai",
         location: user.location || "📍 Sconosciuta"
       }));
       

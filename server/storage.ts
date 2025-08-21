@@ -314,29 +314,29 @@ export class DatabaseStorage implements IStorage {
 
   async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
     // Trova solo gli utenti con cui l'utente corrente ha effettivamente scambiato messaggi
-    const conversationsData = await db.select({
-      otherUserId: sql<string>`CASE 
-        WHEN ${messages.userId} = ${userId} THEN ${messages.recipientId}
-        ELSE ${messages.userId}
-      END`.as('other_user_id')
-    })
-    .from(messages)
-    .where(
+    // Trova tutti i messaggi dell'utente e identifica gli altri partecipanti
+    const userMessages = await db.select().from(messages).where(
       or(
         eq(messages.userId, userId),
         eq(messages.recipientId, userId)
       )
-    )
-    .groupBy(sql<string>`CASE 
-      WHEN ${messages.userId} = ${userId} THEN ${messages.recipientId}
-      ELSE ${messages.userId}
-    END`);
+    );
+
+    // Crea un set degli ID degli altri utenti con cui ha conversato
+    const otherUserIds = new Set<string>();
+    userMessages.forEach(message => {
+      if (message.userId === userId) {
+        otherUserIds.add(message.recipientId);
+      } else {
+        otherUserIds.add(message.userId);
+      }
+    });
 
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
-    // Per ogni conversazione trovata, ottieni i dettagli dell'utente e l'ultimo messaggio
-    for (const conversation of conversationsData) {
-      const otherUser = await this.getUser(conversation.otherUserId);
+    // Per ogni ID utente trovato, ottieni i dettagli dell'utente e l'ultimo messaggio
+    for (const otherUserId of otherUserIds) {
+      const otherUser = await this.getUser(otherUserId);
       if (!otherUser) continue;
 
       const conversationState = await this.getUserConversationState(userId, otherUser.id);
