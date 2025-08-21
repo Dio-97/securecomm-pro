@@ -98,36 +98,43 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
   const handleDeleteUser = async (userId: string, userName: string) => {
     setDeletingUser(userId);
     
-    try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'DELETE'
-      });
-      
-      if (response.ok) {
-        // Aggiorna la cache senza ricaricare la pagina
-        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-        
-        toast({
-          title: "✅ Utente eliminato",
-          description: `${userName} è stato eliminato con successo`,
+    // Animazione con setTimeout per assicurare che sia unidirezionale
+    setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE'
         });
-      } else {
+        
+        if (response.ok) {
+          // Aspetta che l'animazione finisca prima di aggiornare
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+            toast({
+              title: "✅ Utente eliminato",
+              description: `${userName} è stato eliminato con successo`,
+            });
+            setDeletingUser(null);
+            setShowDeleteConfirm(null);
+          }, 1000);
+        } else {
+          toast({
+            title: "❌ Errore", 
+            description: "Impossibile eliminare l'utente",
+            variant: "destructive",
+          });
+          setDeletingUser(null);
+          setShowDeleteConfirm(null);
+        }
+      } catch (error) {
         toast({
-          title: "❌ Errore", 
-          description: "Impossibile eliminare l'utente",
+          title: "❌ Errore di rete",
+          description: "Verifica la connessione",
           variant: "destructive",
         });
+        setDeletingUser(null);
+        setShowDeleteConfirm(null);
       }
-    } catch (error) {
-      toast({
-        title: "❌ Errore di rete",
-        description: "Verifica la connessione",
-        variant: "destructive",
-      });
-    } finally {
-      setDeletingUser(null);
-      setShowDeleteConfirm(null);
-    }
+    }, 100);
   };
 
   const getActivityStatus = (lastActivity: string) => {
@@ -252,35 +259,33 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                     key={user.id}
                     layout
                     initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ 
-                      opacity: isDeleting ? 0 : 1, 
-                      scale: isDeleting ? 0.2 : 1, 
-                      y: isDeleting ? -200 : 0,
-                      rotateX: isDeleting ? 180 : 0,
-                      filter: isDeleting ? "blur(10px)" : "blur(0px)"
+                    animate={isDeleting ? {
+                      opacity: [1, 0.8, 0.4, 0],
+                      scale: [1, 0.8, 0.4, 0.1],
+                      y: [0, -50, -150, -300],
+                      rotateX: [0, 45, 90, 180],
+                      filter: ["blur(0px)", "blur(2px)", "blur(8px)", "blur(20px)"]
+                    } : {
+                      opacity: 1,
+                      scale: 1,
+                      y: 0,
+                      rotateX: 0,
+                      filter: "blur(0px)"
                     }}
-                    exit={{ 
-                      opacity: 0, 
-                      scale: 0.1, 
-                      y: -300,
-                      rotateX: 270,
-                      filter: "blur(20px)",
-                      transition: { 
-                        duration: 0.8, 
-                        ease: "easeIn",
-                        type: "tween"
-                      }
+                    transition={isDeleting ? {
+                      duration: 1,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                      times: [0, 0.3, 0.7, 1]
+                    } : {
+                      duration: 0.4,
+                      delay: index * 0.1,
+                      ease: "easeOut"
                     }}
-                    transition={{ 
-                      duration: isDeleting ? 0.8 : 0.4,
-                      delay: isDeleting ? 0 : index * 0.1,
-                      ease: isDeleting ? "easeIn" : "easeOut",
-                      type: isDeleting ? "tween" : "spring"
-                    }}
-                    whileHover={{ scale: isDeleting ? 0.2 : 1.02 }}
-                    whileTap={{ scale: isDeleting ? 0.2 : 0.98 }}
+                    whileHover={!isDeleting ? { scale: 1.02 } : {}}
+                    whileTap={!isDeleting ? { scale: 0.98 } : {}}
                     style={{
-                      transformPerspective: "1000px"
+                      transformPerspective: "1000px",
+                      pointerEvents: isDeleting ? "none" : "auto"
                     }}
                   >
                     <Card className="hover:shadow-md transition-shadow h-full">
