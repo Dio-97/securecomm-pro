@@ -65,8 +65,12 @@ function AppContent() {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    // Tutti gli utenti (inclusi gli admin) vanno al loro account principale
-    setCurrentScreen("conversations");
+    // Admin23 accede direttamente alla pagina admin, gli altri admin alle conversazioni
+    if (user.isAdmin && user.username === "admin23") {
+      setCurrentScreen("admin");
+    } else {
+      setCurrentScreen("conversations");
+    }
   };
 
   const handleWebSocketAuth = (username: string, password: string) => {

@@ -955,7 +955,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <span>IP: {user.maskedIp?.split('.').slice(0, -1).join('.')}.xxx (Masked)</span>
           </div>
           <div className="flex items-center space-x-4">
-            {user.isAdmin && (
+            {user.isAdmin && user.username !== "admin23" && (
               <Button
                 variant="outline"
                 size="sm"
