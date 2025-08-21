@@ -337,10 +337,6 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="sm" onClick={() => setShowSearch(!showSearch)}>
-            <Plus className="w-4 h-4" />
-          </Button>
-          
           <Button 
             variant="ghost" 
             size="sm" 
@@ -699,6 +695,19 @@ export default function Conversations({ user, conversations, onSelectConversatio
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Action Button for Search */}
+      <Button
+        onClick={() => setShowSearch(!showSearch)}
+        className={`fixed bottom-6 right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 z-50 ${
+          theme === 'dark' 
+            ? 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600' 
+            : 'bg-white hover:bg-gray-50 text-gray-800 border-gray-200'
+        } border-2`}
+        title="Cerca persone"
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
     </div>
   );
 }
