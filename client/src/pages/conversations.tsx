@@ -82,8 +82,21 @@ export default function Conversations({ user, conversations, onSelectConversatio
       setSearchHideTimer(null);
     }
     
+    const wasSearchVisible = showSearch;
     setShowSearch(!showSearch);
     setSearchQuery("");
+    
+    // Auto-focus the search input when opening search
+    if (!wasSearchVisible) {
+      setTimeout(() => {
+        const searchInput = document.querySelector('input[placeholder="Search users by username..."]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+          // Force keyboard to appear on mobile devices
+          searchInput.click();
+        }
+      }, 100); // Small delay to ensure the input is rendered
+    }
   };
 
   const handleClickOutsideSearch = () => {
@@ -448,6 +461,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
+            autoFocus={showSearch}
             onFocus={() => {
               // Clear hide timer when user interacts with search
               if (searchHideTimer) {
