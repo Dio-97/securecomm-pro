@@ -653,17 +653,6 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
         
         <div className="flex items-center space-x-2">
-          {isGodMode && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCredentialsEdit(true)}
-              className="text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950 px-2"
-              title="Modifica credenziali utente"
-            >
-              <Edit3 className="w-4 h-4" />
-            </Button>
-          )}
           
           <Button 
             variant="ghost" 

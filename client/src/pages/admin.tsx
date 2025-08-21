@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { Crown, Settings, LogOut, Eye, UserPlus, Ban, Trash2, Shield } from "lucide-react";
+import { Crown, Settings, LogOut, Eye, UserPlus, Ban, Trash2, Shield, Edit3, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +21,7 @@ interface AdminUser {
   lastActivity: string;
   messageCount: string;
   location: string;
+  avatar?: string | null;
 }
 
 interface AdminProps {
@@ -38,6 +42,10 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showCredentialsEdit, setShowCredentialsEdit] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -96,6 +104,63 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
 
   const handleCreateUser = () => {
     createUserMutation.mutate();
+  };
+
+  const updateCredentialsMutation = useMutation({
+    mutationFn: async ({ userId, username, password }: { userId: string; username?: string; password?: string }) => {
+      const response = await apiRequest("PUT", "/api/admin/update-credentials", {
+        userId,
+        username,
+        password
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setShowCredentialsEdit(false);
+      setEditingUser(null);
+      setNewUsername("");
+      setNewPassword("");
+      toast({
+        title: "Credenziali aggiornate",
+        description: "Le credenziali dell'utente sono state modificate con successo",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare le credenziali",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleEditCredentials = (user: AdminUser) => {
+    setEditingUser(user);
+    setNewUsername(user.username);
+    setNewPassword("");
+    setShowCredentialsEdit(true);
+  };
+
+  const handleSaveCredentials = () => {
+    if (!editingUser) return;
+    
+    const updates: { userId: string; username?: string; password?: string } = {
+      userId: editingUser.id
+    };
+    
+    if (newUsername && newUsername !== editingUser.username) {
+      updates.username = newUsername;
+    }
+    if (newPassword) {
+      updates.password = newPassword;
+    }
+    
+    if (updates.username || updates.password) {
+      updateCredentialsMutation.mutate(updates);
+    } else {
+      setShowCredentialsEdit(false);
+    }
   };
 
   const getActivityStatus = (lastActivity: string) => {
@@ -167,9 +232,13 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-3 mb-3">
                       <Avatar className="w-10 h-10 bg-blue-500">
-                        <AvatarFallback className="text-white font-semibold text-sm">
-                          {user.initials}
-                        </AvatarFallback>
+                        {user.avatar ? (
+                          <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          <AvatarFallback className="text-white font-semibold text-sm">
+                            <UserIcon className="w-5 h-5" />
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <div className="flex-1">
                         <h4 className="font-medium text-card-foreground">{user.name}</h4>
@@ -193,7 +262,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       </div>
                     </div>
                     
-                    <div className="flex justify-between mt-4">
+                    <div className="flex justify-between mt-4 space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -201,10 +270,22 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                           e.stopPropagation();
                           onViewUser(user.username);
                         }}
-                        className="text-xs"
+                        className="text-xs flex-1"
                       >
                         <Eye className="w-3 h-3 mr-1" />
                         View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCredentials(user);
+                        }}
+                        className="text-xs"
+                        title="Modifica credenziali"
+                      >
+                        <Edit3 className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
@@ -216,8 +297,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                         className="text-xs"
                         disabled={deleteUserMutation.isPending}
                       >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Delete
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </CardContent>
@@ -251,6 +331,47 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
           </CardContent>
         </Card>
       </div>
+
+      {/* Credentials Edit Dialog */}
+      <Dialog open={showCredentialsEdit} onOpenChange={setShowCredentialsEdit}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifica Credenziali - {editingUser?.username}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="new-username">Nuovo Username</Label>
+              <Input
+                id="new-username"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Inserisci nuovo username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-password">Nuova Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Lascia vuoto per non modificare"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setShowCredentialsEdit(false)}>
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleSaveCredentials}
+              disabled={updateCredentialsMutation.isPending}
+            >
+              {updateCredentialsMutation.isPending ? "Aggiornamento..." : "Salva"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
