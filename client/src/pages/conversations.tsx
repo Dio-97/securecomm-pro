@@ -59,6 +59,73 @@ export default function Conversations({ user, conversations, onSelectConversatio
     }
   };
 
+  const handleRandomServerSwitch = async () => {
+    try {
+      // Fetch available servers
+      const serversResponse = await fetch('/api/vpn/servers');
+      const servers = await serversResponse.json();
+      
+      if (servers.length === 0) {
+        toast({
+          title: "Errore",
+          description: "Nessun server disponibile",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get current server to avoid selecting the same one
+      const currentCountry = user.vpnCountry;
+      const availableServers = servers.filter((server: any) => server.country !== currentCountry);
+      
+      // If all servers are the same country, use all servers
+      const serversToChooseFrom = availableServers.length > 0 ? availableServers : servers;
+      
+      // Select random server
+      const randomServer = serversToChooseFrom[Math.floor(Math.random() * serversToChooseFrom.length)];
+      
+      // Connect to the new server
+      const connectResponse = await fetch('/api/vpn/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          serverId: randomServer.id
+        })
+      });
+
+      if (connectResponse.ok) {
+        const result = await connectResponse.json();
+        
+        // Update user data with new server info
+        const newUserData = {
+          vpnServer: randomServer.name,
+          vpnCountry: randomServer.country,
+          maskedIp: result.maskedIp || user.maskedIp,
+          location: randomServer.location || user.location
+        };
+        
+        handleVPNRotate(newUserData);
+        
+        toast({
+          title: "Server Cambiato",
+          description: `Connesso a ${randomServer.country} (${randomServer.name})`,
+        });
+      } else {
+        throw new Error('Failed to connect to server');
+      }
+    } catch (error) {
+      console.error('Error switching server:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile cambiare server. Riprova.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleUsernameClick = () => {
     // Clear any existing timer
     if (usernameEditTimer) {
@@ -635,8 +702,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowSecurityPanel(true)}
-            className="text-xs"
+            onClick={handleRandomServerSwitch}
+            className="text-xs hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
           >
             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
