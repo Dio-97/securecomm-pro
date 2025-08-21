@@ -183,14 +183,7 @@ export function useWebSocket() {
         messageKey: null
       };
       
-      console.log('📱 MESSAGGIO LOCALE CREATO:', {
-        messageUserId: immediateMessage.userId,
-        currentUserId: user?.id,
-        userUsername: user?.username,
-        stringComparison: `"${immediateMessage.userId}" === "${user?.id}" = ${immediateMessage.userId === user?.id}`,
-        willBeOnRight: immediateMessage.userId === user?.id,
-        MATCH: immediateMessage.userId === user?.id ? '✅ DESTRA' : '❌ SINISTRA'
-      });
+      console.log('📱 Messaggio locale aggiunto per visibilità immediata');
       
       setMessages(prev => [...prev, immediateMessage]);
       console.log('📱 Messaggio aggiunto localmente per visibilità immediata');
@@ -213,12 +206,7 @@ export function useWebSocket() {
         messageKey: null
       };
       
-      console.log('📱 MESSAGGIO OFFLINE CREATO:', {
-        messageUserId: localMessage.userId,
-        currentUserId: user?.id,
-        willBeOnRight: localMessage.userId === user?.id,
-        MATCH: localMessage.userId === user?.id ? '✅ DESTRA' : '❌ SINISTRA'
-      });
+      console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');
       
       setMessages(prev => [...prev, localMessage]);
       console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');

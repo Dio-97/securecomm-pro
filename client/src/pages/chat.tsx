@@ -76,9 +76,24 @@ export default function Chat({
     }
   };
 
+  // Auto-scroll verso il basso quando arrivano nuovi messaggi (messaggi recenti in basso)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
     console.log('📨 Messaggi aggiornati nella chat:', messages.length);
+  }, [messages]);
+
+  // Scroll immediato per messaggi appena inviati
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.id?.startsWith('temp-') || lastMessage.id?.startsWith('local-')) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+      }
+    }
   }, [messages]);
 
   const handleSendMessage = () => {
@@ -341,21 +356,14 @@ export default function Chat({
         </div>
       </header>
 
-      {/* Messages Area */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 chat-background ${theme === 'dark' ? 'dark' : ''}`}>
+      {/* Messages Area - messaggi più vecchi in alto, più recenti in basso */}
+      <div className={`flex-1 overflow-y-auto p-4 space-y-3 chat-background ${theme === 'dark' ? 'dark' : ''}`}>
         {messages.map((message) => {
-          // FORZA l'allineamento per admin23 - i suoi messaggi vanno SEMPRE a destra
-          const isOwnMessage = user.username === 'admin23' || message.userId === user.id;
-          
-          console.log('🔍 RENDER MESSAGGIO COMPLETO:', {
-            messageId: message.id.substring(0, 10),
-            messageUserId: message.userId,
-            currentUserId: user.id,
-            userUsername: user.username,
-            comparison: `"${message.userId}" === "${user.id}" = ${message.userId === user.id}`,
-            isOwnMessage,
-            alignment: isOwnMessage ? 'DESTRA ✅' : 'SINISTRA ❌'
-          });
+          // I messaggi dell'utente corrente vanno a destra, quelli ricevuti a sinistra
+          const isOwnMessage = message.userId === user.id || 
+                               (message.username === user.username) ||
+                               (message.id?.startsWith('temp-') && !message.userId) ||
+                               (message.id?.startsWith('local-') && !message.userId);
           
           return (
             <MessageBubble
