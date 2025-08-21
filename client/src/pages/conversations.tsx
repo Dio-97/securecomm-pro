@@ -699,11 +699,12 @@ export default function Conversations({ user, conversations, onSelectConversatio
       {/* Floating Action Button for Search */}
       <Button
         onClick={() => setShowSearch(!showSearch)}
-        className={`fixed bottom-6 right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 z-50 ${
+        className={`fixed right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 z-50 ${
           theme === 'dark' 
             ? 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600' 
             : 'bg-white hover:bg-gray-50 text-gray-800 border-gray-200'
         } border-2`}
+        style={{ bottom: 'calc(1.5rem + 3cm)' }}
         title="Cerca persone"
       >
         <Plus className="w-6 h-6" />
