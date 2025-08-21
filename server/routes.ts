@@ -61,6 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: { 
           id: user.id, 
           username: user.username, 
+          avatar: user.avatar,
           isAdmin: user.isAdmin,
           maskedIp: user.maskedIp,
           vpnServer: user.vpnServer,
@@ -692,6 +693,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, ws);
       }
     });
+  });
+
+  // Update user profile (username)
+  app.put("/api/users/:userId/username", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { username } = req.body;
+      
+      if (!username || username.trim().length < 3) {
+        return res.status(400).json({ message: "Username must be at least 3 characters" });
+      }
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username.trim());
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(409).json({ message: "Username already taken" });
+      }
+      
+      const success = await storage.updateUsername(userId, username.trim());
+      if (success) {
+        res.json({ success: true, message: "Username updated successfully" });
+      } else {
+        res.status(400).json({ message: "Failed to update username" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Update user avatar
+  app.put("/api/users/:userId/avatar", upload.single('avatar'), async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+      
+      // Check file type
+      if (!req.file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ message: "File must be an image" });
+      }
+      
+      // Check file size (max 5MB)
+      if (req.file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: "Image must be smaller than 5MB" });
+      }
+      
+      // Convert to base64
+      const base64Avatar = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      
+      const success = await storage.updateUserAvatar(userId, base64Avatar);
+      if (success) {
+        res.json({ success: true, avatar: base64Avatar, message: "Avatar updated successfully" });
+      } else {
+        res.status(400).json({ message: "Failed to update avatar" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
   });
 
   function broadcastToClients(message: any, excludeWs?: AuthenticatedWebSocket) {

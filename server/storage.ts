@@ -12,6 +12,8 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserActivity(userId: string, realIp?: string): Promise<void>;
   rotateUserVPN(userId: string): Promise<User | undefined>;
+  updateUsername(userId: string, username: string): Promise<boolean>;
+  updateUserAvatar(userId: string, avatar: string): Promise<boolean>;
   
   // Presence management
   setUserOnline(userId: string): Promise<void>;
@@ -67,6 +69,7 @@ export class MemStorage implements IStorage {
       id: adminId,
       username: "admin23",
       password: "5550123",
+      avatar: null,
       isAdmin: true,
       isInvited: true,
       invitedBy: null,
@@ -104,6 +107,7 @@ export class MemStorage implements IStorage {
         id,
         username: user.username,
         password: "demo123",
+        avatar: null,
         isAdmin: false,
         isInvited: true,
         invitedBy: adminId,
@@ -147,6 +151,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
+      avatar: null,
       isAdmin: false,
       // Crypto fields - will be populated properly later
       identityKey: null,
@@ -515,6 +520,26 @@ export class MemStorage implements IStorage {
 
   getAllOnlineUsers(): string[] {
     return Array.from(this.onlineUsers);
+  }
+
+  async updateUsername(userId: string, username: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (user) {
+      user.username = username;
+      this.users.set(userId, user);
+      return true;
+    }
+    return false;
+  }
+
+  async updateUserAvatar(userId: string, avatar: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (user) {
+      user.avatar = avatar;
+      this.users.set(userId, user);
+      return true;
+    }
+    return false;
   }
 }
 

@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode } from "lucide-react";
+import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode, Upload, Edit3, Check, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -40,7 +43,11 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showMyDeviceQR, setShowMyDeviceQR] = useState(false);
   const [myDeviceQRCode, setMyDeviceQRCode] = useState<string>('');
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+  const [showUsernameEdit, setShowUsernameEdit] = useState(false);
+  const [newUsername, setNewUsername] = useState(user.username);
   const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
 
   const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
     if (onUserUpdate) {
@@ -139,18 +146,135 @@ export default function Conversations({ user, conversations, onSelectConversatio
     return { status: "offline", color: "bg-gray-500" };
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Errore",
+        description: "Il file deve essere un'immagine",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Errore", 
+        description: "L'immagine deve essere più piccola di 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await fetch(`/api/users/${user.id}/avatar`, {
+        method: 'PUT',
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        onUserUpdate?.({ avatar: data.avatar });
+        toast({
+          title: "Successo",
+          description: "Immagine profilo aggiornata",
+        });
+        setShowAvatarUpload(false);
+      } else {
+        toast({
+          title: "Errore",
+          description: data.message || "Errore durante l'aggiornamento",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Errore di connessione",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUsernameUpdate = async () => {
+    if (!newUsername.trim() || newUsername.trim().length < 3) {
+      toast({
+        title: "Errore",
+        description: "Il nome utente deve essere di almeno 3 caratteri",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${user.id}/username`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername.trim() })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        onUserUpdate?.({ username: newUsername.trim() });
+        toast({
+          title: "Successo",
+          description: "Nome utente aggiornato",
+        });
+        setShowUsernameEdit(false);
+      } else {
+        toast({
+          title: "Errore",
+          description: data.message || "Errore durante l'aggiornamento",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore", 
+        description: "Errore di connessione",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className={`min-h-screen flex flex-col messaging-background ${theme === 'dark' ? 'dark' : ''}`}>
       {/* Header */}
       <header className="bg-card border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <Avatar className="w-8 h-8 bg-primary">
-            <AvatarFallback>
-              <User className="w-4 h-4 text-primary-foreground" />
-            </AvatarFallback>
+          <Avatar 
+            className="w-8 h-8 bg-primary cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setShowAvatarUpload(true)}
+            title="Clicca per cambiare immagine profilo"
+          >
+            {user.avatar ? (
+              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+            ) : (
+              <AvatarFallback>
+                <User className="w-4 h-4 text-primary-foreground" />
+              </AvatarFallback>
+            )}
           </Avatar>
           <div>
-            <h2 className="font-semibold text-sm text-card-foreground">{user.username}</h2>
+            <div className="flex items-center space-x-2">
+              <h2 className="font-semibold text-sm text-card-foreground">{user.username}</h2>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowUsernameEdit(true)}
+                className="h-auto p-0 w-4 h-4 hover:bg-gray-200 dark:hover:bg-gray-700"
+                title="Modifica nome utente"
+              >
+                <Edit3 className="w-3 h-3" />
+              </Button>
+            </div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-xs text-muted-foreground">
@@ -446,6 +570,84 @@ export default function Conversations({ user, conversations, onSelectConversatio
         onQRScanned={handleQRScanned}
         title="Scan QR Code"
       />
+
+      {/* Avatar Upload Modal */}
+      <Dialog open={showAvatarUpload} onOpenChange={setShowAvatarUpload}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Camera className="w-5 h-5" />
+              <span>Cambia Immagine Profilo</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center">
+              <Label htmlFor="avatar-upload" className="cursor-pointer">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Clicca per selezionare un'immagine
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    PNG, JPG, GIF fino a 5MB
+                  </p>
+                </div>
+                <Input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </Label>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Username Edit Modal */}
+      <Dialog open={showUsernameEdit} onOpenChange={setShowUsernameEdit}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Edit3 className="w-5 h-5" />
+              <span>Modifica Nome Utente</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-username">Nuovo nome utente</Label>
+              <Input
+                id="new-username"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Inserisci nuovo nome utente"
+                minLength={3}
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleUsernameUpdate}
+                className="flex-1"
+                disabled={!newUsername.trim() || newUsername.trim().length < 3}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Salva
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setNewUsername(user.username);
+                  setShowUsernameEdit(false);
+                }}
+                className="flex-1"
+              >
+                Annulla
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
