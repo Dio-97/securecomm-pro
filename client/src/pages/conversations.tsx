@@ -946,7 +946,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       </div>
 
       {/* Footer */}
-      <div className="bg-card border-t p-4">
+      <div className="bg-card border-t p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
             <ShieldQuestion className="w-3 h-3" />
@@ -955,7 +955,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <span>IP: {user.maskedIp?.split('.').slice(0, -1).join('.')}.xxx (Masked)</span>
           </div>
           <div className="flex items-center space-x-4">
-            {user.isAdmin && user.username !== "admin23" && (
+            {user.isAdmin && (
               <Button
                 variant="outline"
                 size="sm"
