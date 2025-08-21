@@ -296,7 +296,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 + 0.5 }}
                         >
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 justify-center">
                             <Button
                               size="sm"
                               variant="outline"
@@ -304,7 +304,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                                 e.stopPropagation();
                                 onViewUser(user.username);
                               }}
-                              className="text-xs px-2"
+                              className="text-xs px-4 py-2 h-9 min-w-[120px]"
                             >
                               <Eye className="w-3 h-3 mr-1" />
                               Visualizza
@@ -346,14 +346,13 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                                       });
                                     }
                                   }}
-                                  className="text-xs px-2"
+                                  className="text-xs px-3 py-2 h-9"
                                 >
                                   <X className="w-3 h-3" />
                                 </Button>
                                 
                                 <Button
                                   size="sm"
-                                  variant={user.isAdmin ? "destructive" : "default"}
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     try {
@@ -384,7 +383,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                                       });
                                     }
                                   }}
-                                  className="text-xs"
+                                  className="text-xs px-4 py-2 h-9 min-w-[120px] bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
                                 >
                                   <Crown className="w-3 h-3 mr-1" />
                                   {user.isAdmin ? 'Rimuovi' : 'Rendi'} Admin
