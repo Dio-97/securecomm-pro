@@ -8,7 +8,6 @@ import {
   Wifi, 
   Globe, 
   FileUp, 
-  QrCode, 
   Activity,
   Server,
   Eye,
@@ -49,9 +48,8 @@ export function SecurityPanel({ userId, username, isVisible, onClose }: Security
   const [isConnectingVPN, setIsConnectingVPN] = useState(false);
   const [selectedServer, setSelectedServer] = useState('1');
   const [servers, setServers] = useState<any[]>([]);
-  const [identityQR, setIdentityQR] = useState<string>('');
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
-  const [deviceId, setDeviceId] = useState<string>('');
+
+
 
   useEffect(() => {
     if (isVisible) {
@@ -98,27 +96,7 @@ export function SecurityPanel({ userId, username, isVisible, onClose }: Security
     }
   };
 
-  const generateIdentityQR = async () => {
-    setIsGeneratingQR(true);
-    try {
-      const response = await fetch('/api/qr/generate-identity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId, 
-          username
-        })
-      });
-      
-      const data = await response.json();
-      setIdentityQR(data.qrCode);
-      setDeviceId(data.deviceId);
-    } catch (error) {
-      console.error('Failed to generate identity QR:', error);
-    } finally {
-      setIsGeneratingQR(false);
-    }
-  };
+
 
   const connectVPN = async () => {
     setIsConnectingVPN(true);
@@ -206,7 +184,7 @@ export function SecurityPanel({ userId, username, isVisible, onClose }: Security
         
         <CardContent>
           <Tabs defaultValue="vpn" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="vpn" className="flex items-center gap-2">
                 <Wifi className="w-4 h-4" />
                 VPN
@@ -215,10 +193,7 @@ export function SecurityPanel({ userId, username, isVisible, onClose }: Security
                 <Globe className="w-4 h-4" />
                 DNS
               </TabsTrigger>
-              <TabsTrigger value="identity" className="flex items-center gap-2">
-                <QrCode className="w-4 h-4" />
-                Identità
-              </TabsTrigger>
+
               <TabsTrigger value="files" className="flex items-center gap-2">
                 <FileUp className="w-4 h-4" />
                 File
@@ -378,70 +353,7 @@ export function SecurityPanel({ userId, username, isVisible, onClose }: Security
               </Card>
             </TabsContent>
 
-            <TabsContent value="identity" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Identità Dispositivo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      {!identityQR ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-blue-600 justify-center">
-                            <QrCode className="w-5 h-5" />
-                            <span className="text-sm font-medium">Genera il tuo QR di identità</span>
-                          </div>
-                          <p className="text-xs text-gray-600">
-                            Questo QR rappresenta l'identità univoca del tuo dispositivo e può essere usato da altri utenti per verificare la tua identità nelle conversazioni.
-                          </p>
-                          <Button 
-                            onClick={generateIdentityQR}
-                            disabled={isGeneratingQR}
-                            className="w-full"
-                            size="sm"
-                          >
-                            {isGeneratingQR ? (
-                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                              <QrCode className="w-4 h-4 mr-2" />
-                            )}
-                            Genera QR Identità
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-green-600 justify-center">
-                            <CheckCircle2 className="w-5 h-5" />
-                            <span className="text-sm font-medium">QR di identità generato</span>
-                          </div>
-                          <div className="bg-white p-4 rounded-lg border">
-                            <img 
-                              src={identityQR} 
-                              alt="QR di identità" 
-                              className="w-full max-w-64 mx-auto"
-                            />
-                          </div>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <p><strong>Device ID:</strong> {deviceId.slice(0, 12)}...</p>
-                            <p>Altri utenti possono scansionare questo QR per verificare la tua identità</p>
-                          </div>
-                          <Button 
-                            onClick={generateIdentityQR}
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                          >
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Rigenera QR
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+
 
             <TabsContent value="files" className="space-y-4">
               <Card>
