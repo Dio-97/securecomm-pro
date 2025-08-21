@@ -898,16 +898,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
             
           case 'join_conversation':
-            if (ws.userId && message.otherUserId) {
+            if (ws.userId && (message.otherUserId || message.userId)) {
+              const otherUserId = message.otherUserId || message.userId;
               console.log('📡 JOIN_CONVERSATION WebSocket:', {
                 userId: ws.userId,
-                otherUserId: message.otherUserId
+                otherUserId: otherUserId,
+                messageData: message
               });
               
-              storage.joinConversation(ws.userId, message.otherUserId, ws.userId);
+              storage.joinConversation(ws.userId, otherUserId, ws.userId);
               
               // Send conversation messages
-              const messages = await storage.getConversationMessages(ws.userId, message.otherUserId);
+              const messages = await storage.getConversationMessages(ws.userId, otherUserId);
               console.log('📨 Inviando cronologia messaggi:', messages.length, 'messaggi');
               ws.send(JSON.stringify({ 
                 type: 'message_history', 
@@ -917,7 +919,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Broadcast presence update to show user is in chat
               broadcastPresenceUpdate(ws.userId, 'online');
             } else {
-              console.log('❌ JOIN_CONVERSATION fallito - Dati mancanti');
+              console.log('❌ JOIN_CONVERSATION fallito - Dati mancanti:', {
+                userId: ws.userId,
+                messageData: message
+              });
             }
             break;
             

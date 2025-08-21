@@ -60,6 +60,7 @@ function AppContent() {
     sendMessage,
     loadConversation,
     leaveConversation,
+    refreshConversations,
     viewUserAsGod,
     getUserPresenceStatus 
   } = useWebSocket();
@@ -135,8 +136,20 @@ function AppContent() {
         });
         console.log('✅ Conversazione salvata automaticamente');
         
-        // Aggiorna lista conversazioni
+        // Refresh lista conversazioni IMMEDIATAMENTE usando WebSocket
+        if (refreshConversations) {
+          refreshConversations();
+        }
+        
+        // Refresh anche con queryClient per sicurezza
         handleConversationRemoved();
+        
+        // Ultimo refresh dopo delay per essere certi
+        setTimeout(() => {
+          if (refreshConversations) {
+            refreshConversations();
+          }
+        }, 1000);
       } catch (error) {
         console.error('❌ Errore salvataggio conversazione:', error);
       }

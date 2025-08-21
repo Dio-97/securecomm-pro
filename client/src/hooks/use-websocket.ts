@@ -22,6 +22,35 @@ export function useWebSocket() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>([]);
   const [user, setUser] = useState<User | null>(null);
+
+  // Funzione per ricaricare le conversazioni
+  const refreshConversations = async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('🔄 Refresh conversazioni per utente:', user.id);
+      const response = await fetch(`/api/conversations/${user.id}`);
+      const freshConversations = await response.json();
+      console.log('📋 Conversazioni aggiornate:', freshConversations.length);
+      setConversations(freshConversations);
+    } catch (error) {
+      console.error('❌ Errore refresh conversazioni:', error);
+    }
+  };
+
+  // Auto-refresh conversazioni ogni 3 secondi quando l'utente è loggato
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const interval = setInterval(() => {
+      refreshConversations();
+    }, 3000);
+    
+    // Refresh immediato quando l'utente si logga
+    refreshConversations();
+    
+    return () => clearInterval(interval);
+  }, [user?.id]);
   const [userPresence, setUserPresence] = useState<Map<string, 'online' | 'offline' | 'in-your-chat'>>(new Map());
   const audioReceivedCallback = useRef<((audioData: string, senderId: string, senderUsername: string) => void) | null>(null);
 
@@ -66,6 +95,8 @@ export function useWebSocket() {
           break;
           
         case 'conversations_list':
+        case 'conversations_updated':
+          console.log('📋 Lista conversazioni aggiornata:', message.conversations.length);
           setConversations(message.conversations);
           break;
           
@@ -159,10 +190,15 @@ export function useWebSocket() {
       
       // Invia WebSocket join per ricevere messaggi in tempo reale
       if (ws.current?.readyState === WebSocket.OPEN) {
-        console.log('📡 Invio join_conversation WebSocket');
+        console.log('📡 Invio join_conversation WebSocket con dati:', {
+          type: 'join_conversation',
+          otherUserId: userId2,
+          userId: userId1
+        });
         ws.current.send(JSON.stringify({ 
           type: 'join_conversation', 
-          otherUserId: userId2 
+          otherUserId: userId2,
+          userId: userId1
         }));
       } else {
         console.error('❌ WebSocket non connesso per join_conversation');
@@ -245,6 +281,7 @@ export function useWebSocket() {
     loadConversation,
     leaveConversation,
     joinConversation,
+    refreshConversations,
     viewUserAsGod,
     getUserPresenceStatus,
     sendAudio,
