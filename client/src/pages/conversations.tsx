@@ -50,6 +50,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [searchHideTimer, setSearchHideTimer] = useState<NodeJS.Timeout | null>(null);
   const [lastSearchActivity, setLastSearchActivity] = useState<number>(Date.now());
   const [newUsername, setNewUsername] = useState(user.username);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
 
@@ -410,35 +412,56 @@ export default function Conversations({ user, conversations, onSelectConversatio
     formData.append('avatar', file);
 
     try {
-      const response = await fetch(`/api/users/${user.id}/avatar`, {
-        method: 'PUT',
-        body: formData
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // Create XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(percentComplete);
+        }
       });
 
-      const data = await response.json();
+      // Handle upload completion
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        xhr.onabort = () => reject(new Error('Upload cancelled'));
+      });
+
+      xhr.open('PUT', `/api/users/${user.id}/avatar`);
+      xhr.send(formData);
+
+      const data = await uploadPromise;
       
-      if (response.ok) {
-        // Update user state with new avatar, completely replacing the old one
-        onUserUpdate?.({ avatar: data.avatar });
-        
-        toast({
-          title: "Successo",
-          description: "Immagine profilo aggiornata",
-        });
-        setShowAvatarUpload(false);
-      } else {
-        toast({
-          title: "Errore",
-          description: data.message || "Errore durante l'aggiornamento",
-          variant: "destructive"
-        });
-      }
+      // Update user state with new avatar, completely replacing the old one
+      onUserUpdate?.({ avatar: data.avatar });
+      
+      toast({
+        title: "Successo",
+        description: "Immagine profilo aggiornata",
+      });
+      setShowAvatarUpload(false);
+      
     } catch (error) {
       toast({
         title: "Errore",
-        description: "Errore di connessione",
+        description: "Errore durante l'upload",
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -880,11 +903,11 @@ export default function Conversations({ user, conversations, onSelectConversatio
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
-              <Label htmlFor="avatar-upload" className="cursor-pointer">
+              <Label htmlFor="avatar-upload" className={isUploading ? "cursor-not-allowed opacity-50" : "cursor-pointer"}>
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
                   <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Clicca per selezionare un'immagine
+                    {isUploading ? "Caricamento in corso..." : "Clicca per selezionare un'immagine"}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     PNG, JPG, GIF fino a 5MB
@@ -896,9 +919,31 @@ export default function Conversations({ user, conversations, onSelectConversatio
                   accept="image/*"
                   onChange={handleAvatarUpload}
                   className="hidden"
+                  disabled={isUploading}
                 />
               </Label>
             </div>
+            
+            {/* Progress Bar */}
+            {isUploading && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Upload in corso...</span>
+                  <span className="font-medium text-primary">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-300 ease-out relative"
+                    style={{ width: `${uploadProgress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <span className="text-lg font-bold text-primary">{uploadProgress}%</span>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
