@@ -1038,12 +1038,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
           case 'leave_conversation':
             if (ws.userId && message.otherUserId) {
-              console.log(`🚪 WebSocket: Utente ${ws.userId} esce dalla conversazione con ${message.otherUserId}`);
+              console.log(`🚪 LEAVE_CONVERSATION WebSocket: Utente ${ws.userId} esce dalla conversazione con ${message.otherUserId}`);
               
-              // Cancella i messaggi per l'utente che esce e controlla la distruzione
+              // Step 1: Cancella i messaggi per l'utente che esce
+              console.log(`🔄 Step 1: Cancellazione messaggi per ${ws.userId}`);
               await storage.clearUserMessages(ws.userId, message.otherUserId);
+              
+              // Step 2: Rimuovi l'utente dalla chat attiva
+              console.log(`🚪 Step 2: Rimuovi utente dalla chat attiva`);
               await storage.leaveConversation(ws.userId, message.otherUserId, ws.userId);
+              
+              // Step 3: Controlla se distruggere completamente i messaggi
+              console.log(`🔍 Step 3: Controllo distruzione messaggi`);
               await storage.checkAndDestroyConversation(ws.userId, message.otherUserId);
+              
+              console.log(`✅ LEAVE_CONVERSATION completato per ${ws.userId}`);
+            } else {
+              console.log('❌ LEAVE_CONVERSATION fallito - Dati mancanti:', {
+                userId: ws.userId,
+                otherUserId: message.otherUserId
+              });
             }
             break;
             
