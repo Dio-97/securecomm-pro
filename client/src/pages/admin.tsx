@@ -80,39 +80,39 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <UserIcon className="w-8 h-8 text-blue-500" />
+      {/* Stats Cards - Compatto */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-3">
+            <div className="flex items-center space-x-2">
+              <UserIcon className="w-5 h-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.length}</p>
-                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{users.length}</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">Utenti</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <Crown className="w-8 h-8 text-yellow-500" />
+        <Card className="bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+          <CardContent className="p-3">
+            <div className="flex items-center space-x-2">
+              <Crown className="w-5 h-5 text-yellow-600" />
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.filter(u => u.isAdmin).length}</p>
-                <p className="text-sm text-muted-foreground">Administrators</p>
+                <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">{users.filter(u => u.isAdmin).length}</p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">Admin</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <div className="w-4 h-4 bg-white rounded-full"></div>
+        <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+          <CardContent className="p-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.filter(u => getActivityStatus(u.lastActivity).color === "bg-green-500").length}</p>
-                <p className="text-sm text-muted-foreground">Online Now</p>
+                <p className="text-lg font-bold text-green-900 dark:text-green-100">{users.filter(u => getActivityStatus(u.lastActivity).color === "bg-green-500").length}</p>
+                <p className="text-xs text-green-700 dark:text-green-300">Online</p>
               </div>
             </div>
           </CardContent>
