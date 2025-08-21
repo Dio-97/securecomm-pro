@@ -699,11 +699,15 @@ export default function Conversations({ user, conversations, onSelectConversatio
       {/* Floating Action Button for Search */}
       <Button
         onClick={() => setShowSearch(!showSearch)}
-        className={`fixed right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 z-50 ${
+        className={`fixed right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 z-50 ${
           theme === 'dark' 
             ? 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600' 
             : 'bg-white hover:bg-gray-50 text-gray-800 border-gray-200'
-        } border-2`}
+        } border-2 ${
+          showSearch 
+            ? 'opacity-0 scale-90 pointer-events-none' 
+            : 'opacity-100 scale-100 pointer-events-auto'
+        }`}
         style={{ bottom: 'calc(1.5rem + 3cm)' }}
         title="Cerca persone"
       >
