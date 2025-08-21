@@ -79,20 +79,26 @@ export default function Conversations({ user, conversations, onSelectConversatio
   });
 
   const handleStartConversation = async (userId: string, username: string) => {
-    // Save the conversation when starting it for the first time
+    // Always save the conversation when clicking on a user to make it persistent
     try {
       await fetch('/api/conversations/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, otherUserId: userId })
       });
+      
+      // Trigger a refresh of the conversations list to show the new conversation immediately
+      if (onConversationRemoved) {
+        onConversationRemoved(); // This callback will refresh the parent component's conversations
+      }
     } catch (error) {
       console.error('Failed to save conversation:', error);
     }
     
-    onSelectConversation(userId, username);
+    // Clear search and navigate to conversation
     setShowSearch(false);
     setSearchQuery("");
+    onSelectConversation(userId, username);
   };
 
   const handleQRScanned = async (qrData: any) => {

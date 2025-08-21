@@ -94,7 +94,8 @@ function AppContent() {
   };
 
   const handleConversationRemoved = () => {
-    // Conversations will refresh automatically via WebSocket
+    // Force refresh conversations by invalidating the query cache
+    queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
   };
 
   const handleEditMessage = async (messageId: string, content: string) => {
