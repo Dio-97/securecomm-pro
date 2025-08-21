@@ -76,7 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', apiLimiter);
 
   // Authentication endpoint with 2FA support
-  app.post("/api/auth/login", loginLimiter, async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password, twoFactorCode } = loginSchema.parse(req.body);
       
@@ -85,8 +85,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Verify password using bcrypt
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      // Verify password - handle both plain text and bcrypt hashed passwords
+      let isValidPassword = false;
+      
+      if (user.password.startsWith('$2b$')) {
+        // Password is bcrypt hashed
+        isValidPassword = await bcrypt.compare(password, user.password);
+      } else {
+        // Password is plain text (legacy users)
+        isValidPassword = password === user.password;
+      }
+      
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
