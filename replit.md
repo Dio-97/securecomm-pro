@@ -41,12 +41,14 @@ Search restriction: Users cannot search for themselves in user search - applies 
 ## Data Storage
 - **Database**: PostgreSQL with Neon serverless connection for persistent data storage
 - **ORM**: Drizzle ORM with migrations managed through drizzle-kit
-- **Schema**: Complete entities - users, messages, invitations, savedConversations, sharedFiles, cryptoSessions with proper foreign key relationships
+- **Schema**: Complete entities - users, messages, invitations, savedConversations, sharedFiles, cryptoSessions, conversationStates with proper foreign key relationships
 - **Storage Implementation**: DatabaseStorage class replaces MemStorage for persistent user and message data
 - **Migration**: All user creation, deletion, and message operations now persist across server restarts
+- **Conversation State Tracking**: Individual conversation states track message visibility and auto-destruction triggers
 - **Auto-Save Conversations**: All chats opened through search are automatically saved to savedConversations table for all users (August 21, 2025)
 - **Conversation Caching**: Server maintains real-time cache of user conversations updated via WebSocket on saves and messages
 - **Ultra-Fast Refresh**: Client refreshes conversation list every 500ms for instant message visibility and contact updates (August 21, 2025)
+- **Ephemeral Messaging**: Messages are temporary and automatically cleared when user exits chat, permanently destroyed from server when both users leave (August 21, 2025)
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging
