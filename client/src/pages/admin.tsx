@@ -46,6 +46,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [inputsEnabled, setInputsEnabled] = useState(false);
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -117,10 +118,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setShowCredentialsEdit(false);
-      setEditingUser(null);
-      setNewUsername("");
-      setNewPassword("");
+      handleCloseDialog();
       toast({
         title: "Credenziali aggiornate",
         description: "Le credenziali dell'utente sono state modificate con successo",
@@ -139,36 +137,13 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
     setEditingUser(user);
     setNewUsername(user.username);
     setNewPassword("");
+    setInputsEnabled(false);
     setShowCredentialsEdit(true);
     
-    // Multiple strategies to prevent keyboard opening
+    // Enable inputs after dialog is fully rendered and settled
     setTimeout(() => {
-      // Blur any active element
-      const activeElement = document.activeElement as HTMLElement;
-      if (activeElement && activeElement.blur) {
-        activeElement.blur();
-      }
-      
-      // Remove focus from all inputs in the dialog
-      const dialogInputs = document.querySelectorAll('input');
-      dialogInputs.forEach(input => {
-        input.blur();
-        input.setAttribute('readonly', 'true');
-        setTimeout(() => {
-          input.removeAttribute('readonly');
-        }, 300);
-      });
-    }, 0);
-    
-    // Additional timeout for stubborn mobile browsers
-    setTimeout(() => {
-      const inputs = document.querySelectorAll('#new-username, #new-password');
-      inputs.forEach(input => {
-        if (input instanceof HTMLInputElement) {
-          input.blur();
-        }
-      });
-    }, 50);
+      setInputsEnabled(true);
+    }, 500);
   };
 
   const handleSaveCredentials = () => {
@@ -189,7 +164,16 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
       updateCredentialsMutation.mutate(updates);
     } else {
       setShowCredentialsEdit(false);
+      setInputsEnabled(false);
     }
+  };
+
+  const handleCloseDialog = () => {
+    setShowCredentialsEdit(false);
+    setInputsEnabled(false);
+    setEditingUser(null);
+    setNewUsername("");
+    setNewPassword("");
   };
 
   const getActivityStatus = (lastActivity: string) => {
@@ -362,7 +346,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
       </div>
 
       {/* Credentials Edit Dialog */}
-      <Dialog open={showCredentialsEdit} onOpenChange={setShowCredentialsEdit}>
+      <Dialog open={showCredentialsEdit} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Modifica Credenziali - {editingUser?.username}</DialogTitle>
@@ -374,15 +358,11 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 id="new-username"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                placeholder="Inserisci nuovo username"
+                placeholder={inputsEnabled ? "Inserisci nuovo username" : "Caricamento..."}
+                disabled={!inputsEnabled}
+                readOnly={!inputsEnabled}
                 autoFocus={false}
                 autoComplete="off"
-                onFocus={(e) => {
-                  // Prevent focus if dialog just opened
-                  if (showCredentialsEdit) {
-                    setTimeout(() => e.target.blur(), 50);
-                  }
-                }}
               />
             </div>
             <div>
@@ -392,20 +372,16 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Lascia vuoto per non modificare"
+                placeholder={inputsEnabled ? "Lascia vuoto per non modificare" : "Caricamento..."}
+                disabled={!inputsEnabled}
+                readOnly={!inputsEnabled}
                 autoFocus={false}
                 autoComplete="off"
-                onFocus={(e) => {
-                  // Prevent focus if dialog just opened
-                  if (showCredentialsEdit) {
-                    setTimeout(() => e.target.blur(), 50);
-                  }
-                }}
               />
             </div>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowCredentialsEdit(false)}>
+            <Button variant="outline" onClick={handleCloseDialog}>
               Annulla
             </Button>
             <Button 
