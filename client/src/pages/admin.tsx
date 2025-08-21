@@ -214,7 +214,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
         <Card className="mt-8">
           <CardContent className="p-6">
             <h4 className="font-semibold mb-4 text-card-foreground">Controllo Admin</h4>
-            <div className="text-center">
+            <div className="flex items-center justify-center space-x-4">
               <Button 
                 onClick={onMonitorSessions}
                 className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700"
@@ -222,10 +222,38 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 <Eye className="w-4 h-4" />
                 <span>Monitor All Sessions</span>
               </Button>
-              <p className="text-xs text-muted-foreground mt-2">
+              
+              <Button 
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/users/create', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ invitedBy: "admin23" })
+                    });
+                    
+                    if (response.ok) {
+                      const result = await response.json();
+                      alert(`Utente creato!\nUsername: ${result.credentials.username}\nPassword: ${result.credentials.password}`);
+                      // Ricarica la lista utenti
+                      window.location.reload();
+                    } else {
+                      alert('Errore nella creazione utente');
+                    }
+                  } catch (error) {
+                    console.error('Error creating random user:', error);
+                    alert('Errore di rete');
+                  }
+                }}
+                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700"
+              >
+                <UserIcon className="w-4 h-4" />
+                <span>Crea Utente Random</span>
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
                 Modalità solo visualizzazione - Non è possibile modificare o eliminare utenti
               </p>
-            </div>
           </CardContent>
         </Card>
       </div>
