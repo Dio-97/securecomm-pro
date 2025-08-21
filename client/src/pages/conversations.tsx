@@ -749,7 +749,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       </header>
 
       {/* Search Section */}
-      <div className={`search-container transition-all duration-300 ${
+      <div className={`search-container transition-all duration-300 z-[9999] relative ${
         showSearch 
           ? 'opacity-100 max-h-32 border-b' 
           : 'opacity-0 max-h-0 border-b-0'
@@ -790,8 +790,15 @@ export default function Conversations({ user, conversations, onSelectConversatio
           />
         </div>
           
-          {searchQuery.length > 2 && (
-            <div className="mt-4 space-y-2">
+          {searchQuery.length >= 1 && (
+            <div className="mt-4 space-y-2 z-[9999] relative bg-card border rounded-lg shadow-lg p-2"
+                 style={{ 
+                   position: 'absolute',
+                   top: '100%',
+                   left: '0',
+                   right: '0',
+                   zIndex: 9999
+                 }}>
               {searchLoading ? (
                 <div className="text-center text-muted-foreground py-4">Searching...</div>
               ) : searchResults.length > 0 ? (
