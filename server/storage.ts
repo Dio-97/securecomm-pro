@@ -432,31 +432,27 @@ export class DatabaseStorage implements IStorage {
       const conversationState = await this.getUserConversationState(userId, otherUser.id);
       const savedConv = savedConvs.find(sc => sc.otherUserId === otherUserId);
       
-      // Mostra la conversazione solo se non è stata cleared
-      const shouldShowMessages = !conversationState?.conversationCleared;
-      console.log(`🔍 shouldShowMessages per ${otherUser.username}:`, shouldShowMessages, 'conversationCleared:', conversationState?.conversationCleared);
-      
+      // SEMPRE cerca l'ultimo messaggio per il riordinamento, anche se la conversazione è cleared
       let lastMessage = undefined;
-      if (shouldShowMessages) {
-        // Ottieni l'ultimo messaggio della conversazione
-        const [message] = await db.select().from(messages).where(
-          or(
-            and(eq(messages.userId, userId), eq(messages.recipientId, otherUser.id)),
-            and(eq(messages.userId, otherUser.id), eq(messages.recipientId, userId))
-          )
-        ).orderBy(desc(messages.timestamp)).limit(1);
-        lastMessage = message || undefined;
-        
-        if (lastMessage) {
-          console.log(`📨 MESSAGGIO TROVATO per ${otherUser.username}:`, {
-            id: lastMessage.id,
-            content: lastMessage.content.substring(0, 20) + '...',
-            timestamp: lastMessage.timestamp,
-            da: lastMessage.username
-          });
-        } else {
-          console.log(`❌ NESSUN MESSAGGIO per ${otherUser.username} - conversazione solo salvata`);
-        }
+      
+      // Ottieni l'ultimo messaggio della conversazione
+      const [message] = await db.select().from(messages).where(
+        or(
+          and(eq(messages.userId, userId), eq(messages.recipientId, otherUser.id)),
+          and(eq(messages.userId, otherUser.id), eq(messages.recipientId, userId))
+        )
+      ).orderBy(desc(messages.timestamp)).limit(1);
+      lastMessage = message || undefined;
+      
+      if (lastMessage) {
+        console.log(`📨 MESSAGGIO TROVATO per ${otherUser.username}:`, {
+          id: lastMessage.id,
+          content: lastMessage.content.substring(0, 20) + '...',
+          timestamp: lastMessage.timestamp,
+          da: lastMessage.username
+        });
+      } else {
+        console.log(`❌ NESSUN MESSAGGIO per ${otherUser.username} - conversazione solo salvata`);
       }
 
       // Includi la conversazione se: ha messaggi O è stata salvata esplicitamente
