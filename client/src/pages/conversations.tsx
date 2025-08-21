@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode, Upload, Edit3, Check, Camera, Crown } from "lucide-react";
+import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, Upload, Edit3, Check, Camera, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { SecurityPanel } from "@/components/SecurityPanel";
 import { PresenceIndicator } from "@/components/presence-indicator";
-import { QRCodeModal } from "@/components/QRCodeModal";
+
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Message } from "@shared/schema";
 
@@ -43,9 +43,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
-  const [showQRScanner, setShowQRScanner] = useState(false);
-  const [showMyDeviceQR, setShowMyDeviceQR] = useState(false);
-  const [myDeviceQRCode, setMyDeviceQRCode] = useState<string>('');
+
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
   const [showUsernameEditIcon, setShowUsernameEditIcon] = useState(false);
@@ -363,46 +361,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
     onSelectConversation(userId, username);
   };
 
-  const handleQRScanned = async (qrData: any) => {
-    try {
-      // Verify the QR code with the backend
-      const response = await fetch('/api/qr/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrData: JSON.stringify(qrData) })
-      });
-      
-      const result = await response.json();
-      
-      if (result.isValid && result.data) {
-        // Handle different types of QR codes
-        if (result.data.type === 'user_identity') {
-          // User identity QR - start conversation with the user
-          await handleStartConversation(result.data.userId, result.data.username);
-          
-          // Show verification success message
-          console.log(`✓ Verified identity: ${result.data.username} (Device: ${result.data.deviceId.slice(0, 8)}...)`);
-          
-        } else if (result.data.type === 'conversation_verification') {
-          // Conversation verification QR
-          const otherUserId = result.data.senderId === user.id ? result.data.recipientId : result.data.senderId;
-          const otherUsername = result.data.senderId === user.id ? result.data.recipientUsername : result.data.senderUsername;
-          
-          await handleStartConversation(otherUserId, otherUsername);
-          
-        } else if (result.data.userId && result.data.username) {
-          // Legacy user verification QR
-          await handleStartConversation(result.data.userId, result.data.username);
-        }
-      } else {
-        console.error('Invalid QR code or verification failed');
-      }
-    } catch (error) {
-      console.error('Failed to verify QR code:', error);
-    }
-    
-    setShowQRScanner(false);
-  };
+
 
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();
@@ -697,32 +656,6 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
         
         <div className="flex items-center space-x-2">
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/qr/generate-identity', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    userId: user.id, 
-                    username: user.username 
-                  })
-                });
-                
-                const data = await response.json();
-                setMyDeviceQRCode(data.qrCode);
-                setShowMyDeviceQR(true);
-              } catch (error) {
-                console.error('Failed to generate device QR:', error);
-              }
-            }}
-            title="Il mio QR dispositivo"
-          >
-            <QrCode className="w-4 h-4" />
-          </Button>
           
           <Button 
             variant="ghost" 
@@ -1054,59 +987,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
         onClose={() => setShowSecurityPanel(false)}
       />
 
-      {/* My Device QR Modal */}
-      {showMyDeviceQR && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <div className="text-center space-y-4">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900 rounded-full">
-                <QrCode className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Il mio QR Dispositivo
-              </h3>
-              
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Mostra questo QR ad altri utenti per verificare la tua identità nelle conversazioni.
-              </p>
-              
-              {myDeviceQRCode && (
-                <div className="bg-white p-4 rounded-lg border mx-auto max-w-64">
-                  <img 
-                    src={myDeviceQRCode} 
-                    alt="Il mio QR dispositivo" 
-                    className="w-full max-w-64 mx-auto"
-                  />
-                </div>
-              )}
-              
-              <div className="text-xs text-gray-500">
-                Altri utenti possono scansionare questo QR per verificare la tua identità
-              </div>
-              
-              <Button 
-                onClick={() => {
-                  setShowMyDeviceQR(false);
-                  setMyDeviceQRCode('');
-                }}
-                className="w-full"
-              >
-                Chiudi
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* QR Scanner Modal */}
-      <QRCodeModal
-        isOpen={showQRScanner}
-        onClose={() => setShowQRScanner(false)}
-        mode="scan"
-        onQRScanned={handleQRScanned}
-        title="Scan QR Code"
-      />
 
       {/* Avatar Upload Modal */}
       <Dialog 

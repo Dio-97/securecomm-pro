@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, QrCode, Shield, FileUp, X, MessageCircle, RefreshCw } from "lucide-react";
+import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, Shield, FileUp, X, MessageCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -9,7 +9,7 @@ import { useTheme } from "@/components/theme-provider";
 import { MessageBubble } from "@/components/message-bubble";
 import { WalkieTalkie, useAudioPlayer } from "@/components/walkie-talkie";
 import { PresenceIndicator } from "@/components/presence-indicator";
-import { QRCodeModal } from "@/components/QRCodeModal";
+
 import { VPNStatus } from "@/components/vpn-status";
 import type { Message, User as UserType } from "@shared/schema";
 
@@ -45,18 +45,12 @@ export default function Chat({
   onSendAudio
 }: ChatProps) {
   const [newMessage, setNewMessage] = useState("");
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [qrMode, setQRMode] = useState<'generate' | 'scan'>('generate');
-  const [qrPurpose, setQRPurpose] = useState<'message' | 'file'>('message');
+
   const [showVPNPanel, setShowVPNPanel] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showChatVerificationConfirm, setShowChatVerificationConfirm] = useState(false);
 
-  // Gli admin sono esenti dalla verifica QR - tutte le funzioni disponibili senza verifica
-  const isAdminChat = user.isAdmin || (recipientUsername === "admin23");
-  const [isConversationVerified, setIsConversationVerified] = useState(isAdminChat);
   const [isFirstMessage, setIsFirstMessage] = useState(messages.length === 0);
-  const [isFirstFileShare, setIsFirstFileShare] = useState(true);
   const [pendingFileUpload, setPendingFileUpload] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -105,29 +99,10 @@ export default function Chat({
     console.log('🚀 INVIO MESSAGGIO CLIENT:', {
       messaggio: newMessage,
       mittente: user.username,
-      destinatario: recipientUsername,
-      isAdminChat
+      destinatario: recipientUsername
     });
     
-    // Admin chat è esente dalla verifica QR - invia direttamente
-    if (isAdminChat) {
-      console.log('✅ Admin chat - Invio diretto senza verifica QR');
-      onSendMessage(newMessage, recipientId);
-      setNewMessage("");
-      setIsFirstMessage(false);
-      return;
-    }
-    
-    // Check if this is the first message and conversation needs verification
-    if (isFirstMessage && !isConversationVerified) {
-      console.log('🔒 Primo messaggio - Richiesta verifica QR');
-      setQRPurpose('message');
-      setQRMode('scan');
-      setShowChatVerificationConfirm(true);
-      return;
-    }
-    
-    console.log('📤 Invio messaggio normale');
+    console.log('📤 Invio messaggio');
     onSendMessage(newMessage, recipientId);
     setNewMessage("");
     setIsFirstMessage(false);
@@ -158,49 +133,17 @@ export default function Chat({
   const displayName = isGodMode ? godModeTarget : recipientUsername;
 
   // Handle QR code verification
-  const handleQRGenerated = async (qrCode: string) => {
-    // QR code generated for recipient to scan
-    console.log('QR code generated for conversation verification');
-  };
-
-  const handleChatVerificationConfirm = () => {
-    setShowChatVerificationConfirm(false);
-    setQRMode('scan');
-    setShowQRModal(true);
-  };
-
-  const handleChatVerificationCancel = () => {
-    setShowChatVerificationConfirm(false);
-  };
 
 
 
 
 
-  const handleQRScanned = async (result: any) => {
-    if (result.isValid) {
-      setIsConversationVerified(true);
-      setShowQRModal(false);
-      
-      // Handle based on the purpose
-      if (qrPurpose === 'message') {
-        // Send the pending message
-        if (newMessage.trim()) {
-          onSendMessage(newMessage, recipientId);
-          setNewMessage("");
-          setIsFirstMessage(false);
-        }
-      } else if (qrPurpose === 'file') {
-        // After verification for file sharing, open the file upload modal
-        if (pendingFileUpload) {
-          await uploadFile(pendingFileUpload);
-        } else {
-          // If no pending file, just open the file upload modal
-          setShowFileUpload(true);
-        }
-      }
-    }
-  };
+
+
+
+
+
+
 
   // Handle file selection and upload (conversation is already verified at this point)
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,7 +172,7 @@ export default function Chat({
         const result = await response.json();
         // Send file share message
         onSendMessage(`📎 Shared file: ${result.filename} (expires ${new Date(result.expiresAt).toLocaleString()})`, recipientId);
-        setIsFirstFileShare(false);
+
       }
     } catch (error) {
       console.error('File upload failed:', error);
@@ -245,10 +188,6 @@ export default function Chat({
 
   useEffect(() => {
     setIsFirstMessage(messages.length === 0);
-    // Reset file sharing state when conversation changes
-    if (messages.length > 0) {
-      setIsFirstFileShare(false);
-    }
   }, [messages.length]);
 
   return (
@@ -321,28 +260,10 @@ export default function Chat({
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              // Check if conversation is verified before allowing file upload
-              if (!isConversationVerified) {
-                setQRPurpose('file');
-                setQRMode('generate');
-                setShowQRModal(true);
-              } else {
-                setShowFileUpload(true);
-              }
-            }}
+            onClick={() => setShowFileUpload(true)}
             title="Share Encrypted File"
           >
             <FileUp className="w-4 h-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setShowChatVerificationConfirm(true)}
-            title="Verifica Chat"
-          >
-            <QrCode className="w-4 h-4" />
           </Button>
           
           <Button variant="ghost" size="sm" onClick={toggleTheme}>
@@ -383,16 +304,7 @@ export default function Chat({
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => {
-              // Admin chat è esente dalla verifica QR - accesso diretto ai file
-              if (isAdminChat || isConversationVerified) {
-                setShowFileUpload(true);
-              } else {
-                setQRPurpose('file');
-                setQRMode('generate');
-                setShowQRModal(true);
-              }
-            }}
+            onClick={() => setShowFileUpload(true)}
             title="Attach File"
           >
             <Paperclip className="w-4 h-4" />
@@ -490,57 +402,7 @@ export default function Chat({
 
 
 
-      {/* Chat Verification Confirmation */}
-      {showChatVerificationConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <div className="text-center space-y-4">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900 rounded-full">
-                <QrCode className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Verifica Chat
-              </h3>
-              
-              <p className="text-gray-600 dark:text-gray-300">
-                Stai per aprire la fotocamera per scansionare un codice QR e verificare l'identità del tuo interlocutore. Vuoi continuare?
-              </p>
-              
-              <div className="flex space-x-3 pt-4">
-                <Button 
-                  onClick={handleChatVerificationCancel}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Annulla
-                </Button>
-                <Button 
-                  onClick={handleChatVerificationConfirm}
-                  className="flex-1"
-                >
-                  OK, Continua
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* QR Code Modal */}
-      <QRCodeModal
-        isOpen={showQRModal}
-        onClose={() => setShowQRModal(false)}
-        mode={qrMode}
-        onQRGenerated={handleQRGenerated}
-        onQRScanned={handleQRScanned}
-        generationData={{
-          userId: user.id,
-          username: user.username,
-          publicKey: user.publicKey || 'demo-key'
-        }}
-        title="Scan QR Code per Verifica Chat"
-      />
 
       {/* File Upload Modal */}
       {showFileUpload && (
@@ -551,28 +413,13 @@ export default function Chat({
                 <FileUp className="w-5 h-5" />
                 Share Encrypted File
               </h3>
-              <div className="flex items-center gap-2">
-                <Button 
-                  onClick={() => {
-                    setQRPurpose('file');
-                    setQRMode('generate');
-                    setShowQRModal(true);
-                    setShowFileUpload(false);
-                  }} 
-                  variant="ghost" 
-                  size="sm"
-                  title="Generate File QR Code"
-                >
-                  <QrCode className="w-4 h-4" />
-                </Button>
-                <Button 
-                  onClick={() => setShowFileUpload(false)} 
-                  variant="ghost" 
-                  size="sm"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button 
+                onClick={() => setShowFileUpload(false)} 
+                variant="ghost" 
+                size="sm"
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
             
             <div className="space-y-4">
