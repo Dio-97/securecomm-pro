@@ -112,11 +112,6 @@ export default function Chat({
       onSendMessage(newMessage, recipientId);
       setNewMessage("");
       setIsFirstMessage(false);
-      
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
       return;
     }
     
@@ -133,17 +128,18 @@ export default function Chat({
     onSendMessage(newMessage, recipientId);
     setNewMessage("");
     setIsFirstMessage(false);
-    
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+      // Mantieni il focus sulla textarea per evitare che la tastiera si chiuda
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 10);
     }
   };
 
@@ -411,7 +407,18 @@ export default function Chat({
             />
           </div>
           
-          <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+          <Button 
+            onClick={() => {
+              handleSendMessage();
+              // Mantieni il focus sulla textarea dopo aver inviato
+              setTimeout(() => {
+                if (textareaRef.current) {
+                  textareaRef.current.focus();
+                }
+              }, 10);
+            }} 
+            disabled={!newMessage.trim()}
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>
