@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Crown, Settings, LogOut, Eye, User as UserIcon, ArrowLeft, X } from "lucide-react";
+import { Crown, Settings, LogOut, Eye, User as UserIcon, ArrowLeft, X, Edit2, Check, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,9 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<'username' | 'password' | null>(null);
+  const [editValue, setEditValue] = useState("");
   
   const { data: allUsers = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -42,6 +46,52 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
   const users = allUsers.filter(user => 
     currentUser ? user.username !== currentUser.username : true
   );
+
+  const handleStartEdit = (userId: string, field: 'username' | 'password', currentValue: string) => {
+    setEditingUser(userId);
+    setEditingField(field);
+    setEditValue(field === 'password' ? '' : currentValue);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditingField(null);
+    setEditValue("");
+  };
+
+  const handleSaveEdit = async (userId: string) => {
+    if (!editingField || !editValue.trim()) return;
+
+    try {
+      const endpoint = editingField === 'username' ? 'username' : 'password';
+      const response = await fetch(`/api/users/${userId}/${endpoint}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [editingField]: editValue.trim() })
+      });
+      
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+        toast({
+          title: "✅ Aggiornamento completato",
+          description: `${editingField === 'username' ? 'Username' : 'Password'} aggiornato con successo`,
+        });
+        handleCancelEdit();
+      } else {
+        toast({
+          title: "❌ Errore",
+          description: editingField === 'username' ? "Username già esistente o non valido" : "Impossibile aggiornare la password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Errore di rete",
+        description: "Verifica la connessione",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();
@@ -344,87 +394,82 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                           </div>
                           
                           {user.username !== "admin23" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const newPassword = prompt("Nuova password per " + user.name + ":");
-                                  if (newPassword && newPassword.trim()) {
-                                    try {
-                                      const response = await fetch(`/api/users/${user.id}/password`, {
-                                        method: 'PATCH',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ password: newPassword.trim() })
-                                      });
-                                      
-                                      if (response.ok) {
-                                        toast({
-                                          title: "✅ Password aggiornata",
-                                          description: `Password cambiata per ${user.name}`,
-                                        });
-                                      } else {
-                                        toast({
-                                          title: "❌ Errore",
-                                          description: "Impossibile aggiornare la password",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    } catch (error) {
-                                      toast({
-                                        title: "❌ Errore di rete",
-                                        description: "Verifica la connessione",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }
-                                }}
-                                className="text-xs flex-1"
-                              >
-                                🔑 Cambia Password
-                              </Button>
+                            <div className="space-y-2">
+                              {/* Edit Username */}
+                              <div className="flex gap-2 items-center">
+                                <span className="text-xs text-muted-foreground w-16">Username:</span>
+                                {editingUser === user.id && editingField === 'username' ? (
+                                  <div className="flex gap-1 flex-1">
+                                    <Input
+                                      value={editValue}
+                                      onChange={(e) => setEditValue(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveEdit(user.id);
+                                        if (e.key === 'Escape') handleCancelEdit();
+                                      }}
+                                      className="text-xs h-7"
+                                      autoFocus
+                                    />
+                                    <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(user.id)} className="h-7 w-7 p-0">
+                                      <Check className="w-3 h-3 text-green-600" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-7 w-7 p-0">
+                                      <XCircle className="w-3 h-3 text-red-600" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-1 items-center flex-1">
+                                    <span className="text-xs flex-1">@{user.username}</span>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => handleStartEdit(user.id, 'username', user.username)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                               
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const newUsername = prompt("Nuovo username per " + user.name + ":", user.username);
-                                  if (newUsername && newUsername.trim() && newUsername !== user.username) {
-                                    try {
-                                      const response = await fetch(`/api/users/${user.id}/username`, {
-                                        method: 'PATCH',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ username: newUsername.trim() })
-                                      });
-                                      
-                                      if (response.ok) {
-                                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                                        toast({
-                                          title: "✅ Username aggiornato",
-                                          description: `Username cambiato in ${newUsername}`,
-                                        });
-                                      } else {
-                                        toast({
-                                          title: "❌ Errore",
-                                          description: "Username già esistente o non valido",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    } catch (error) {
-                                      toast({
-                                        title: "❌ Errore di rete",
-                                        description: "Verifica la connessione",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }
-                                }}
-                                className="text-xs flex-1"
-                              >
-                                ✏️ Cambia Username
-                              </Button>
+                              {/* Edit Password */}
+                              <div className="flex gap-2 items-center">
+                                <span className="text-xs text-muted-foreground w-16">Password:</span>
+                                {editingUser === user.id && editingField === 'password' ? (
+                                  <div className="flex gap-1 flex-1">
+                                    <Input
+                                      type="password"
+                                      value={editValue}
+                                      onChange={(e) => setEditValue(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveEdit(user.id);
+                                        if (e.key === 'Escape') handleCancelEdit();
+                                      }}
+                                      placeholder="Nuova password"
+                                      className="text-xs h-7"
+                                      autoFocus
+                                    />
+                                    <Button size="sm" variant="ghost" onClick={() => handleSaveEdit(user.id)} className="h-7 w-7 p-0">
+                                      <Check className="w-3 h-3 text-green-600" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-7 w-7 p-0">
+                                      <XCircle className="w-3 h-3 text-red-600" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-1 items-center flex-1">
+                                    <span className="text-xs flex-1">••••••••</span>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => handleStartEdit(user.id, 'password', '')}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </motion.div>
