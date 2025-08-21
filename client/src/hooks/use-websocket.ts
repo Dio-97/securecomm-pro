@@ -171,7 +171,7 @@ export function useWebSocket() {
       const immediateMessage = {
         id: `temp-${Date.now()}`,
         content,
-        userId: user?.id || 'current-user',
+        userId: user?.id as string,
         recipientId,
         username: user?.username || 'You',
         timestamp: new Date(),
@@ -186,7 +186,8 @@ export function useWebSocket() {
       console.log('📱 MESSAGGIO LOCALE CREATO:', {
         messageUserId: immediateMessage.userId,
         currentUserId: user?.id,
-        willBeOnRight: immediateMessage.userId === user?.id
+        willBeOnRight: immediateMessage.userId === user?.id,
+        MATCH: immediateMessage.userId === user?.id ? '✅ DESTRA' : '❌ SINISTRA'
       });
       
       setMessages(prev => [...prev, immediateMessage]);
@@ -198,7 +199,7 @@ export function useWebSocket() {
       const localMessage = {
         id: `local-${Date.now()}`,
         content,
-        userId: user?.id || 'current-user',
+        userId: user?.id as string,
         recipientId,
         username: user?.username || 'You',
         timestamp: new Date(),
@@ -213,7 +214,8 @@ export function useWebSocket() {
       console.log('📱 MESSAGGIO OFFLINE CREATO:', {
         messageUserId: localMessage.userId,
         currentUserId: user?.id,
-        willBeOnRight: localMessage.userId === user?.id
+        willBeOnRight: localMessage.userId === user?.id,
+        MATCH: localMessage.userId === user?.id ? '✅ DESTRA' : '❌ SINISTRA'
       });
       
       setMessages(prev => [...prev, localMessage]);
