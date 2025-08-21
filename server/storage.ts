@@ -314,12 +314,11 @@ export class DatabaseStorage implements IStorage {
 
   async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
     // Trova solo gli utenti con cui l'utente corrente ha effettivamente scambiato messaggi
-    const messagesQuery = await db.select({
+    const conversationsData = await db.select({
       otherUserId: sql<string>`CASE 
         WHEN ${messages.userId} = ${userId} THEN ${messages.recipientId}
         ELSE ${messages.userId}
-      END`.as('other_user_id'),
-      lastMessageTime: sql<Date>`MAX(${messages.timestamp})`.as('last_message_time')
+      END`.as('other_user_id')
     })
     .from(messages)
     .where(
@@ -328,7 +327,7 @@ export class DatabaseStorage implements IStorage {
         eq(messages.recipientId, userId)
       )
     )
-    .groupBy(sql`CASE 
+    .groupBy(sql<string>`CASE 
       WHEN ${messages.userId} = ${userId} THEN ${messages.recipientId}
       ELSE ${messages.userId}
     END`);
@@ -336,7 +335,7 @@ export class DatabaseStorage implements IStorage {
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
     // Per ogni conversazione trovata, ottieni i dettagli dell'utente e l'ultimo messaggio
-    for (const conversation of messagesQuery) {
+    for (const conversation of conversationsData) {
       const otherUser = await this.getUser(conversation.otherUserId);
       if (!otherUser) continue;
 

@@ -191,26 +191,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/search/:query", async (req, res) => {
     try {
       const { query } = req.params;
-      const currentUserId = (req as any).session?.user?.id;
       
-      if (!currentUserId) {
-        return res.status(401).json({ message: "User not authenticated" });
+      if (!query || query.length < 2) {
+        return res.json([]);
       }
       
       // Ottieni tutti gli utenti senza filtri per la ricerca
       const allUsers = await storage.getAllUsers();
       
-      // Filtra gli utenti che corrispondono alla query, escludendo l'utente corrente
+      // Filtra gli utenti che corrispondono alla query
       const filtered = allUsers.filter(user => 
-        user.id !== currentUserId &&
         user.username.toLowerCase().includes(query.toLowerCase())
       ).map(user => ({
         id: user.id,
         username: user.username,
-        initials: user.username.split('.').map(n => n[0].toUpperCase()).join(''),
-        name: user.username.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' '),
-        lastActivity: user.lastActivity,
-        location: user.location
+        initials: user.username.split(/[._\-]/).map(n => n[0]?.toUpperCase() || '').join('').slice(0, 2),
+        name: user.username.split(/[._\-]/).map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' '),
+        lastActivity: user.lastActivity ? format(new Date(user.lastActivity), "dd/MM/yyyy HH:mm") : "Mai",
+        location: user.location || "📍 Sconosciuta"
       }));
       
       res.json(filtered);
