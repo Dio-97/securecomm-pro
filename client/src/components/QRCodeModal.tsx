@@ -194,10 +194,17 @@ export function QRCodeModal({
   }, [mode, generationData, isOpen]);
 
   React.useEffect(() => {
+    // Auto-start camera when modal opens in scan mode (for chat verification)
+    if (isOpen && mode === 'scan' && title === 'Scan QR Code per Verifica Chat') {
+      setTimeout(() => {
+        startCamera();
+      }, 500);
+    }
+    
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [isOpen, mode, title]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -246,25 +253,6 @@ export function QRCodeModal({
                     <Camera className="w-4 h-4 mr-2" />
                     Start Camera
                   </Button>
-                  
-                  <div className="text-sm text-gray-500">or</div>
-                  
-                  <Button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Image
-                  </Button>
-                  
-                  <Input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
                 </div>
               )}
 

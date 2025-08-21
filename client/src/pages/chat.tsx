@@ -50,6 +50,7 @@ export default function Chat({
   const [qrPurpose, setQRPurpose] = useState<'message' | 'file'>('message');
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showChatVerificationConfirm, setShowChatVerificationConfirm] = useState(false);
   const [isConversationVerified, setIsConversationVerified] = useState(false);
   const [isFirstMessage, setIsFirstMessage] = useState(messages.length === 0);
   const [isFirstFileShare, setIsFirstFileShare] = useState(true);
@@ -119,6 +120,16 @@ export default function Chat({
   const handleQRGenerated = async (qrCode: string) => {
     // QR code generated for recipient to scan
     console.log('QR code generated for conversation verification');
+  };
+
+  const handleChatVerificationConfirm = () => {
+    setShowChatVerificationConfirm(false);
+    setQRMode('scan');
+    setShowQRModal(true);
+  };
+
+  const handleChatVerificationCancel = () => {
+    setShowChatVerificationConfirm(false);
   };
 
   const handleQRScanned = async (result: any) => {
@@ -269,14 +280,10 @@ export default function Chat({
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => {
-              setQRPurpose('message');
-              setQRMode('generate');
-              setShowQRModal(true);
-            }}
-            title="Generate Message QR Code"
+            onClick={() => setShowChatVerificationConfirm(true)}
+            title="Verifica Chat"
           >
-            <MessageCircle className="w-4 h-4" />
+            <QrCode className="w-4 h-4" />
           </Button>
           
           <Button variant="ghost" size="sm" onClick={toggleTheme}>
@@ -358,9 +365,47 @@ export default function Chat({
       {/* Security Panel */}
       <SecurityPanel 
         userId={user.id}
+        username={user.username}
         isVisible={showSecurityPanel}
         onClose={() => setShowSecurityPanel(false)}
       />
+
+      {/* Chat Verification Confirmation */}
+      {showChatVerificationConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900 rounded-full">
+                <QrCode className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Verifica Chat
+              </h3>
+              
+              <p className="text-gray-600 dark:text-gray-300">
+                Stai per aprire la fotocamera per scansionare un codice QR e verificare l'identità del tuo interlocutore. Vuoi continuare?
+              </p>
+              
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  onClick={handleChatVerificationCancel}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Annulla
+                </Button>
+                <Button 
+                  onClick={handleChatVerificationConfirm}
+                  className="flex-1"
+                >
+                  OK, Continua
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QR Code Modal */}
       <QRCodeModal
@@ -374,11 +419,7 @@ export default function Chat({
           username: user.username,
           publicKey: user.publicKey || 'demo-key'
         }}
-        title={
-          qrPurpose === 'message' 
-            ? (isFirstMessage ? 'Verify Identity for New Conversation' : 'Identity Verification for Message')
-            : 'Verify Identity for File Sharing'
-        }
+        title="Scan QR Code per Verifica Chat"
       />
 
       {/* File Upload Modal */}
