@@ -180,6 +180,15 @@ function AppContent() {
       setGodModeTarget("");
     }
     
+    // FORZA REFRESH CONVERSAZIONI QUANDO TORNI INDIETRO
+    console.log('🔄 Refresh automatico conversazioni...');
+    if (refreshConversations) {
+      refreshConversations();
+    }
+    
+    // Force refresh cache
+    handleConversationRemoved();
+    
     // Navigate to conversations regardless of admin status when using back button
     setCurrentScreen("conversations");
     
