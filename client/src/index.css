@@ -8,11 +8,11 @@
 .messaging-background {
   background: linear-gradient(
     135deg,
-    #e9ecef 0%,
-    #dee2e6 8%,
-    #ced4da 16%,
-    #adb5bd 24%,
-    #9fa5ab 32%,
+    #dee2e6 0%,
+    #ced4da 8%,
+    #adb5bd 16%,
+    #9fa5ab 24%,
+    #8d949a 32%,
     #6c757d 40%,
     #495057 48%,
     #343a40 56%,
@@ -83,37 +83,37 @@
 }
 
 :root {
-  --background: hsl(0 0% 92%);
+  --background: hsl(0 0% 89%);
   --foreground: hsl(210 25% 7.8431%);
-  --card: hsl(180 6.6667% 88%);
+  --card: hsl(180 6.6667% 85%);
   --card-foreground: hsl(210 25% 7.8431%);
-  --popover: hsl(0 0% 92%);
+  --popover: hsl(0 0% 89%);
   --popover-foreground: hsl(210 25% 7.8431%);
   --primary: hsl(211 100% 44%);
   --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(210 40% 85%);
+  --secondary: hsl(210 40% 82%);
   --secondary-foreground: hsl(210 25% 7.8431%);
-  --muted: hsl(210 40% 85%);
+  --muted: hsl(210 40% 82%);
   --muted-foreground: hsl(210 25% 50%);
-  --accent: hsl(210 40% 85%);
+  --accent: hsl(210 40% 82%);
   --accent-foreground: hsl(210 25% 7.8431%);
   --destructive: hsl(356 90% 54%);
   --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(210 20% 78%);
-  --input: hsl(210 40% 85%);
+  --border: hsl(210 20% 75%);
+  --input: hsl(210 40% 82%);
   --ring: hsl(211 100% 44%);
   --chart-1: hsl(211 100% 44%);
   --chart-2: hsl(159 100% 36%);
   --chart-3: hsl(42 93% 56%);
   --chart-4: hsl(147 79% 42%);
   --chart-5: hsl(341 75% 51%);
-  --sidebar: hsl(180 6.6667% 88%);
+  --sidebar: hsl(180 6.6667% 85%);
   --sidebar-foreground: hsl(210 25% 7.8431%);
   --sidebar-primary: hsl(211 100% 44%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(210 40% 85%);
+  --sidebar-accent: hsl(210 40% 82%);
   --sidebar-accent-foreground: hsl(211 100% 44%);
-  --sidebar-border: hsl(210 20% 78%);
+  --sidebar-border: hsl(210 20% 75%);
   --sidebar-ring: hsl(211 100% 44%);
   --font-sans: 'Inter', sans-serif;
   --font-serif: Georgia, serif;
