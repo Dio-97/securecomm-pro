@@ -847,7 +847,29 @@ export default function Conversations({ user, conversations, onSelectConversatio
                               <p className="text-xs text-muted-foreground">@{searchUser.username}</p>
                               <p className="text-xs text-muted-foreground">{searchUser.location}</p>
                             </div>
-                            <div className={`w-3 h-3 ${activity.color} rounded-full`}></div>
+                            <div className="flex items-center space-x-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                getUserPresenceStatus && getUserPresenceStatus(searchUser.id) === 'online' 
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+                                  : getUserPresenceStatus && getUserPresenceStatus(searchUser.id) === 'in-your-chat'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                  : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                              }`}>
+                                {getUserPresenceStatus && getUserPresenceStatus(searchUser.id) === 'online' 
+                                  ? 'Online' 
+                                  : getUserPresenceStatus && getUserPresenceStatus(searchUser.id) === 'in-your-chat'
+                                  ? 'In Chat'
+                                  : 'Offline'
+                                }
+                              </span>
+                              <div className={`w-3 h-3 rounded-full ${
+                                getUserPresenceStatus && getUserPresenceStatus(searchUser.id) === 'online' 
+                                  ? 'bg-green-500' 
+                                  : getUserPresenceStatus && getUserPresenceStatus(searchUser.id) === 'in-your-chat'
+                                  ? 'bg-blue-500'
+                                  : 'bg-red-500'
+                              }`}></div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -923,6 +945,75 @@ export default function Conversations({ user, conversations, onSelectConversatio
                   onClick={() => onSelectConversation(conversation.userId, conversation.username)}
                 >
                   <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <Avatar className="w-12 h-12 bg-primary">
+                          <AvatarFallback>
+                            {conversation.username.split('.').map(n => n[0].toUpperCase()).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Online Status Indicator */}
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${
+                          getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
+                            ? 'bg-green-500' 
+                            : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
+                            ? 'bg-blue-500'
+                            : 'bg-red-500'
+                        }`}></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-medium text-card-foreground truncate">
+                            {conversation.username.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ')}
+                          </h4>
+                          <div className="flex items-center space-x-1">
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+                                : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                            }`}>
+                              {getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
+                                ? 'Online' 
+                                : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
+                                ? 'In Chat'
+                                : 'Offline'
+                              }
+                            </span>
+                            {conversation.lastMessage && (
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(conversation.lastMessage.timestamp), 'HH:mm')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {conversation.lastMessage && (
+                          <p className="text-sm text-muted-foreground truncate">
+                            {conversation.lastMessage.content}
+                          </p>
+                        )}
+                        {conversation.unreadCount > 0 && (
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="secondary" className="bg-blue-500 text-white text-xs px-2 py-0.5">
+                              {conversation.unreadCount} nuovo{conversation.unreadCount !== 1 ? 'i' : ''}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveConversation(conversation.userId);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        title="Rimuovi conversazione"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Avatar className="w-12 h-12 bg-blue-500">

@@ -261,7 +261,21 @@ export default function Chat({
               {recipientUsername.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ')}
             </h2>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className={`w-2 h-2 rounded-full ${
+                getUserPresenceStatus && getUserPresenceStatus(recipientId) === 'online' 
+                  ? 'bg-green-500' 
+                  : getUserPresenceStatus && getUserPresenceStatus(recipientId) === 'in-your-chat'
+                  ? 'bg-blue-500'
+                  : 'bg-red-500'
+              }`}></div>
+              <span className="text-xs text-muted-foreground">
+                {getUserPresenceStatus && getUserPresenceStatus(recipientId) === 'online' 
+                  ? 'Online' 
+                  : getUserPresenceStatus && getUserPresenceStatus(recipientId) === 'in-your-chat'
+                  ? 'In Chat'
+                  : 'Offline'
+                }
+              </span>
               <span className="text-xs text-muted-foreground">
                 <Lock className="w-3 h-3 inline mr-1" />
                 Encrypted
