@@ -47,6 +47,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
   const [showUsernameEditIcon, setShowUsernameEditIcon] = useState(false);
   const [usernameEditTimer, setUsernameEditTimer] = useState<NodeJS.Timeout | null>(null);
+  const [searchHideTimer, setSearchHideTimer] = useState<NodeJS.Timeout | null>(null);
   const [newUsername, setNewUsername] = useState(user.username);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -74,14 +75,57 @@ export default function Conversations({ user, conversations, onSelectConversatio
     setUsernameEditTimer(timer);
   };
 
-  // Cleanup timer on unmount
+  const handleSearchToggle = () => {
+    // Clear any existing search hide timer
+    if (searchHideTimer) {
+      clearTimeout(searchHideTimer);
+      setSearchHideTimer(null);
+    }
+    
+    setShowSearch(!showSearch);
+    setSearchQuery("");
+  };
+
+  const handleClickOutsideSearch = () => {
+    if (showSearch && !searchHideTimer) {
+      // Set timer to hide search after 3 seconds
+      const timer = setTimeout(() => {
+        setShowSearch(false);
+        setSearchQuery("");
+        setSearchHideTimer(null);
+      }, 3000);
+      
+      setSearchHideTimer(timer);
+    }
+  };
+
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (usernameEditTimer) {
         clearTimeout(usernameEditTimer);
       }
+      if (searchHideTimer) {
+        clearTimeout(searchHideTimer);
+      }
     };
-  }, [usernameEditTimer]);
+  }, [usernameEditTimer, searchHideTimer]);
+
+  // Add click outside listener for search
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      // Check if click is outside search area and floating button
+      if (showSearch && !target.closest('.search-container') && !target.closest('.floating-search-btn')) {
+        handleClickOutsideSearch();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSearch, searchHideTimer]);
 
   const handleRemoveConversation = async (otherUserId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent conversation from opening
@@ -383,17 +427,28 @@ export default function Conversations({ user, conversations, onSelectConversatio
       </header>
 
       {/* Search Section */}
-      {showSearch && (
-        <div className="bg-card border-b p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search users by username..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      <div className={`search-container transition-all duration-300 ${
+        showSearch 
+          ? 'opacity-100 max-h-32 border-b' 
+          : 'opacity-0 max-h-0 border-b-0'
+      } bg-card overflow-hidden`}
+      style={{ padding: showSearch ? '1rem' : '0' }}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Search users by username..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            onFocus={() => {
+              // Clear hide timer when user interacts with search
+              if (searchHideTimer) {
+                clearTimeout(searchHideTimer);
+                setSearchHideTimer(null);
+              }
+            }}
+          />
+        </div>
           
           {searchQuery.length > 2 && (
             <div className="mt-4 space-y-2">
@@ -431,8 +486,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
               )}
             </div>
           )}
-        </div>
-      )}
+      </div>
 
       {/* Security Panel Quick Access */}
       <div className="border-b p-4">
@@ -698,8 +752,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
       {/* Floating Action Button for Search */}
       <Button
-        onClick={() => setShowSearch(!showSearch)}
-        className={`fixed right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 z-50 ${
+        onClick={handleSearchToggle}
+        className={`floating-search-btn fixed right-6 w-14 h-14 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 z-50 ${
           theme === 'dark' 
             ? 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600' 
             : 'bg-white hover:bg-gray-50 text-gray-800 border-gray-200'
