@@ -122,6 +122,9 @@ function AppContent() {
   const handleSelectConversation = async (userId: string, username: string) => {
     console.log('💬 Aprendo conversazione con:', username, 'ID:', userId);
     
+    // PRIMA: Pulisci i messaggi precedenti per evitare mescolamenti
+    console.log('🧹 Pulizia messaggi precedenti prima del cambio conversazione');
+    
     // Salva SEMPRE la conversazione quando viene aperta (tramite ricerca o lista)
     if (currentUser) {
       try {
@@ -158,7 +161,7 @@ function AppContent() {
     setCurrentConversation({ userId, username });
     setCurrentScreen("chat");
     if (currentUser) {
-      console.log('🔄 Caricamento messaggi per conversazione:', currentUser.id, '<->', userId);
+      console.log('🔄 Caricamento messaggi SOLO per conversazione specifica:', currentUser.id, '<->', userId);
       await loadConversation(currentUser.id, userId);
     }
   };

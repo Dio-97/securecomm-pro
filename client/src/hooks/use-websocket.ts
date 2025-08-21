@@ -101,15 +101,8 @@ export function useWebSocket() {
           
         case 'new_message':
           console.log('💬 Nuovo messaggio ricevuto:', message.message);
-          setMessages(prev => {
-            // Evita duplicati controllando l'ID del messaggio
-            const exists = prev.find(m => m.id === message.message.id);
-            if (!exists) {
-              return [...prev, message.message];
-            }
-            return prev;
-          });
-          // Refresh immediato delle conversazioni quando arriva un nuovo messaggio
+          // NON aggiungere automaticamente messaggi a setMessages - la chat specifica li caricherà
+          // Refresh solo delle conversazioni per aggiornare contatori
           setTimeout(() => refreshConversations(), 50);
           break;
           
@@ -249,7 +242,11 @@ export function useWebSocket() {
 
   const loadConversation = async (userId1: string, userId2: string) => {
     try {
-      console.log('🔗 Caricamento conversazione:', userId1, '<->', userId2);
+      console.log('🔗 Caricamento conversazione PRIVATA:', userId1, '<->', userId2);
+      
+      // PRIMA: Pulisci SEMPRE i messaggi esistenti per isolamento totale
+      console.log('🧹 PULIZIA COMPLETA messaggi per conversazione privata');
+      setMessages([]);
       
       // Join conversation to track active user
       await fetch(`/api/conversations/${userId1}/${userId2}/join`, {
@@ -258,10 +255,10 @@ export function useWebSocket() {
         body: JSON.stringify({ activeUserId: userId1 })
       });
       
-      // Carica messaggi esistenti
+      // Carica SOLO i messaggi di QUESTA conversazione specifica
       const response = await fetch(`/api/conversations/${userId1}/${userId2}`);
       const conversationMessages = await response.json();
-      console.log('📥 Messaggi caricati:', conversationMessages.length);
+      console.log('📥 Messaggi caricati SOLO per questa conversazione:', conversationMessages.length);
       setMessages(conversationMessages);
       
       // Invia WebSocket join per ricevere messaggi in tempo reale
