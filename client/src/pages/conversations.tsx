@@ -87,8 +87,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
     setShowSearch(!showSearch);
     setSearchQuery("");
     
-    // Auto-focus the search input when opening search
     if (!wasSearchVisible) {
+      // Auto-focus the search input when opening search
       setTimeout(() => {
         const searchInput = document.querySelector('input[placeholder="Search users by username..."]') as HTMLInputElement;
         if (searchInput) {
@@ -100,6 +100,9 @@ export default function Conversations({ user, conversations, onSelectConversatio
       
       // Reset activity tracker when search opens
       setLastSearchActivity(Date.now());
+    } else {
+      // Hide keyboard when closing search manually
+      hideKeyboard();
     }
   };
 
@@ -121,6 +124,29 @@ export default function Conversations({ user, conversations, onSelectConversatio
     setSearchHideTimer(timer);
   };
 
+  // Function to hide keyboard
+  const hideKeyboard = () => {
+    // Blur any focused input to hide keyboard
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && activeElement.blur) {
+      activeElement.blur();
+    }
+    
+    // Additional mobile keyboard hiding techniques
+    if (window.visualViewport) {
+      // Force viewport to resize, which often closes keyboard
+      window.scrollTo(0, 0);
+    }
+  };
+
+  // Monitor search visibility changes to hide keyboard
+  useEffect(() => {
+    if (!showSearch) {
+      // Hide keyboard when search is closed
+      hideKeyboard();
+    }
+  }, [showSearch]);
+
   // Continuous monitoring for search inactivity
   useEffect(() => {
     if (!showSearch) return;
@@ -137,6 +163,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
           clearTimeout(searchHideTimer);
           setSearchHideTimer(null);
         }
+        // Keyboard will be hidden by the showSearch useEffect above
       }
     };
 
