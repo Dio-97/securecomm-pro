@@ -121,17 +121,22 @@ export function useWebSocket() {
 
   const sendMessage = (content: string, recipientId: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
-      console.log('🚀 Invio messaggio:', { content, recipientId });
+      console.log('🚀 Invio messaggio:', { content: content.substring(0, 50) + '...', recipientId });
+      console.log('📡 WebSocket stato:', ws.current.readyState === WebSocket.OPEN ? 'APERTO' : 'CHIUSO');
       ws.current.send(JSON.stringify({ 
         type: 'send_message', 
         content,
         recipientId 
       }));
+    } else {
+      console.error('❌ Impossibile inviare messaggio - WebSocket non connesso');
     }
   };
 
   const loadConversation = async (userId1: string, userId2: string) => {
     try {
+      console.log('🔗 Caricamento conversazione:', userId1, '<->', userId2);
+      
       // Join conversation to track active user
       await fetch(`/api/conversations/${userId1}/${userId2}/join`, {
         method: 'POST',
@@ -139,9 +144,22 @@ export function useWebSocket() {
         body: JSON.stringify({ activeUserId: userId1 })
       });
       
+      // Carica messaggi esistenti
       const response = await fetch(`/api/conversations/${userId1}/${userId2}`);
       const conversationMessages = await response.json();
+      console.log('📥 Messaggi caricati:', conversationMessages.length);
       setMessages(conversationMessages);
+      
+      // Invia WebSocket join per ricevere messaggi in tempo reale
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        console.log('📡 Invio join_conversation WebSocket');
+        ws.current.send(JSON.stringify({ 
+          type: 'join_conversation', 
+          otherUserId: userId2 
+        }));
+      } else {
+        console.error('❌ WebSocket non connesso per join_conversation');
+      }
     } catch (error) {
       console.error('Failed to load conversation:', error);
     }

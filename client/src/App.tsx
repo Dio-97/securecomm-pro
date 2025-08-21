@@ -103,9 +103,11 @@ function AppContent() {
   };
 
   const handleSelectConversation = async (userId: string, username: string) => {
+    console.log('💬 Aprendo conversazione con:', username, 'ID:', userId);
     setCurrentConversation({ userId, username });
     setCurrentScreen("chat");
     if (currentUser) {
+      console.log('🔄 Caricamento messaggi per conversazione:', currentUser.id, '<->', userId);
       await loadConversation(currentUser.id, userId);
     }
   };

@@ -823,12 +823,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
           case 'send_message':
             if (ws.userId && ws.username && message.recipientId) {
+              console.log('📨 RICEVUTO send_message WebSocket:', {
+                da: ws.username,
+                a: message.recipientId,
+                messaggio: message.content.substring(0, 30) + '...',
+                clientsConnessi: connectedClients.size
+              });
+              
               const newMessage = await storage.createMessage({
                 content: message.content,
                 userId: ws.userId,
                 recipientId: message.recipientId,
                 username: ws.username,
               });
+              
+              console.log('💾 Messaggio salvato, ID:', newMessage.id);
               
               // Send to sender and recipient
               const recipientClient = connectedClients.get(message.recipientId);
@@ -839,15 +848,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 message: newMessage 
               };
               
-              console.log('💬 Inviando messaggio istantaneo:', {
-                senderId: ws.userId,
-                recipientId: message.recipientId,
-                content: message.content.substring(0, 50) + '...'
-              });
+              console.log('🔍 Verifica connessioni:');
+              console.log('- Destinatario connesso:', !!recipientClient);
+              console.log('- Mittente connesso:', !!senderClient);
               
               // Invia IMMEDIATAMENTE al destinatario
               if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
-                console.log('✅ Invio al destinatario:', message.recipientId);
+                console.log('✅ INVIO ISTANTANEO al destinatario');
                 recipientClient.send(JSON.stringify(messageData));
                 
                 // Aggiorna anche la lista conversazioni del destinatario
@@ -857,12 +864,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   conversations: recipientConversations
                 }));
               } else {
-                console.log('❌ Destinatario non connesso:', message.recipientId);
+                console.log('❌ DESTINATARIO NON CONNESSO');
               }
               
               // Invia IMMEDIATAMENTE al mittente per conferma
               if (senderClient && senderClient.readyState === WebSocket.OPEN) {
-                console.log('✅ Conferma al mittente:', ws.userId);
+                console.log('✅ CONFERMA ISTANTANEA al mittente');
                 senderClient.send(JSON.stringify(messageData));
                 
                 // Aggiorna anche la lista conversazioni del mittente
@@ -871,9 +878,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   type: 'conversations_updated',
                   conversations: senderConversations
                 }));
+              } else {
+                console.log('❌ MITTENTE NON CONNESSO');
               }
               
               await storage.updateUserActivity(ws.userId);
+              console.log('🎯 ELABORAZIONE MESSAGGIO COMPLETATA');
+            } else {
+              console.log('❌ SEND_MESSAGE FALLITO - Dati mancanti');
             }
             break;
             
