@@ -66,7 +66,7 @@ function AppContent() {
   const handleViewUser = (username: string) => {
     setIsGodMode(true);
     setGodModeTarget(username);
-    setCurrentScreen("chat");
+    setCurrentScreen("conversations");
     viewUserAsGod(username);
   };
 
@@ -130,6 +130,9 @@ function AppContent() {
           onUserUpdate={handleUserUpdate}
           onConversationRemoved={handleConversationRemoved}
           getUserPresenceStatus={getUserPresenceStatus}
+          isGodMode={isGodMode}
+          godModeTarget={godModeTarget}
+          onExitGodMode={handleExitGodMode}
         />
       )}
       

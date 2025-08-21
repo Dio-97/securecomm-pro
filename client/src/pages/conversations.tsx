@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode, Upload, Edit3, Check, Camera } from "lucide-react";
+import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode, Upload, Edit3, Check, Camera, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,6 +25,9 @@ interface ConversationsProps {
   onUserUpdate?: (updatedUser: Partial<UserType>) => void;
   onConversationRemoved?: () => void;
   getUserPresenceStatus?: (userId: string) => 'online' | 'offline' | 'in-your-chat';
+  isGodMode?: boolean;
+  godModeTarget?: string;
+  onExitGodMode?: () => void;
 }
 
 interface SearchUser {
@@ -36,7 +39,7 @@ interface SearchUser {
   location: string;
 }
 
-export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved, getUserPresenceStatus }: ConversationsProps) {
+export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved, getUserPresenceStatus, isGodMode = false, godModeTarget = "", onExitGodMode }: ConversationsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
@@ -512,6 +515,26 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
   return (
     <div className={`min-h-screen flex flex-col messaging-background ${theme === 'dark' ? 'dark' : ''}`}>
+      {/* God Mode Banner */}
+      {isGodMode && (
+        <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Crown className="w-5 h-5" />
+            <span className="font-bold">MODALITÀ DIO</span>
+            <span className="text-red-200">- Visualizzando: @{godModeTarget}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onExitGodMode}
+            className="text-white hover:bg-red-700"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Torna Indietro
+          </Button>
+        </div>
+      )}
+      
       {/* Header */}
       <header className="bg-card border-b-2 border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -536,6 +559,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                 title="Tocca per modificare nome utente"
               >
                 {user.username}
+                {isGodMode && <span className="ml-2 text-red-500">(Vista Admin)</span>}
               </h2>
               <Button 
                 variant="ghost" 
@@ -564,6 +588,18 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
         
         <div className="flex items-center space-x-3">
+          {isGodMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExitGodMode}
+              className="text-xs border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <X className="w-3 h-3 mr-1" />
+              Esci
+            </Button>
+          )}
+          
           <Button 
             variant="ghost" 
             size="sm" 
