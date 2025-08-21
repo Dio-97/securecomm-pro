@@ -954,20 +954,26 @@ export default function Conversations({ user, conversations, onSelectConversatio
                             {conversation.username.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ')}
                           </h4>
                           <div className="flex items-center space-x-1">
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                              getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
-                                : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                            }`}>
-                              {getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
-                                ? 'Online' 
-                                : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
-                                ? 'In Chat'
-                                : 'Offline'
-                              }
-                            </span>
+                            <div className="flex items-center space-x-1">
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+                                  : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                  : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                              }`}>
+                                {getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'online' 
+                                  ? 'Online' 
+                                  : getUserPresenceStatus && getUserPresenceStatus(conversation.userId) === 'in-your-chat'
+                                  ? 'In Chat'
+                                  : 'Offline'
+                                }
+                              </span>
+                              {/* Pallino blu per messaggi non letti */}
+                              {conversation.unreadCount > 0 && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                              )}
+                            </div>
                             {conversation.lastMessage && conversation.lastMessage.timestamp && (
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(conversation.lastMessage.timestamp), 'HH:mm')}
@@ -995,7 +1001,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                           e.stopPropagation();
                           handleRemoveConversation(conversation.userId, e);
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        className="opacity-50 hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0"
                         title="Rimuovi conversazione"
                       >
                         <X className="w-4 h-4" />

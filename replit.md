@@ -10,6 +10,7 @@ Auto-save conversations: All chat conversations opened through search are automa
 Message positioning: User's own messages on right (blue), received messages on left (gray)
 Keyboard behavior: Never close automatically when sending messages - stays open until user manually closes
 Ultra-fast refresh: Conversation list updates every 500ms for instant message visibility
+Conversation UI: Blue dot indicator for new messages next to status; X button always visible but subtle (gray, 50% opacity)
 
 # System Architecture
 
