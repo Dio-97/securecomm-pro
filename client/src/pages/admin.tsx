@@ -119,7 +119,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
             });
             setDeletingUser(null);
             setShowDeleteConfirm(null);
-          }, 1000);
+          }, 1500);
         } else {
           toast({
             title: "❌ Errore", 
