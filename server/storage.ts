@@ -326,7 +326,7 @@ export class DatabaseStorage implements IStorage {
     // 1. Ottieni tutte le conversazioni salvate esplicitamente
     const savedConvs = await db.select({
       otherUserId: savedConversations.otherUserId,
-      savedAt: savedConversations.createdAt // Usa createdAt invece di savedAt
+      createdAt: savedConversations.createdAt
     }).from(savedConversations)
       .where(eq(savedConversations.userId, userId));
     
@@ -396,9 +396,9 @@ export class DatabaseStorage implements IStorage {
     const result = Array.from(conversations.values()).sort((a, b) => {
       // Priorità: conversazioni con messaggi recenti, poi conversazioni salvate
       const timeA = a.lastMessage?.timestamp ? new Date(a.lastMessage.timestamp).getTime() : 
-                    savedConvs.find(sc => sc.otherUserId === a.userId)?.savedAt.getTime() || 0;
+                    savedConvs.find(sc => sc.otherUserId === a.userId)?.createdAt.getTime() || 0;
       const timeB = b.lastMessage?.timestamp ? new Date(b.lastMessage.timestamp).getTime() : 
-                    savedConvs.find(sc => sc.otherUserId === b.userId)?.savedAt.getTime() || 0;
+                    savedConvs.find(sc => sc.otherUserId === b.userId)?.createdAt.getTime() || 0;
       return timeB - timeA;
     });
 

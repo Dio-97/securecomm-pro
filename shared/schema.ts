@@ -58,7 +58,6 @@ export const savedConversations = pgTable("saved_conversations", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   otherUserId: varchar("other_user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-  savedAt: timestamp("saved_at").defaultNow(),
   // E2E Session management
   sessionKey: text("session_key"),
   isVerified: boolean("is_verified").default(false),
