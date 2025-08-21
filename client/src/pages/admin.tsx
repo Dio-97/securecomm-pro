@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AdminUser {
   id: string;
@@ -144,74 +145,120 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {users.map((user) => {
-              const activity = getActivityStatus(user.lastActivity);
-              return (
-                <Card key={user.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <Avatar className="w-12 h-12 bg-blue-500">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="w-full h-full object-cover rounded-full" />
-                        ) : (
-                          <AvatarFallback className="text-white font-semibold">
-                            {user.initials}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium text-card-foreground">{user.name}</h4>
-                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            layout
+          >
+            <AnimatePresence mode="popLayout">
+              {users.map((user, index) => {
+                const activity = getActivityStatus(user.lastActivity);
+                return (
+                  <motion.div
+                    key={user.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                    transition={{ 
+                      duration: 0.4,
+                      delay: index * 0.1,
+                      ease: "easeOut"
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <motion.div 
+                          className="flex items-center space-x-4 mb-4"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 + 0.2 }}
+                        >
+                          <Avatar className="w-12 h-12 bg-blue-500">
+                            {user.avatar ? (
+                              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover rounded-full" />
+                            ) : (
+                              <AvatarFallback className="text-white font-semibold">
+                                {user.initials}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium text-card-foreground">{user.name}</h4>
+                                <p className="text-xs text-muted-foreground">@{user.username}</p>
+                              </div>
+                              {user.isAdmin && (
+                                <motion.div
+                                  initial={{ opacity: 0, rotate: -180 }}
+                                  animate={{ opacity: 1, rotate: 0 }}
+                                  transition={{ delay: index * 0.1 + 0.3 }}
+                                >
+                                  <Crown className={`w-4 h-4 ml-2 ${
+                                    user.username === "admin23" 
+                                      ? "text-yellow-300" // Corona oro luminosa per admin principale
+                                      : "text-yellow-600" // Corona gialla più scura per altri admin
+                                  }`} />
+                                </motion.div>
+                              )}
+                            </div>
                           </div>
-                          {user.isAdmin && (
-                            <Crown className={`w-4 h-4 ml-2 ${
-                              user.username === "admin23" 
-                                ? "text-yellow-300" // Corona oro luminosa per admin principale
-                                : "text-yellow-600" // Corona gialla più scura per altri admin
-                            }`} />
-                          )}
-                        </div>
-                      </div>
-                      <div className={`w-3 h-3 ${activity.color} rounded-full`}></div>
-                    </div>
-                    
-                    <div className="space-y-2 text-xs text-muted-foreground mb-4">
-                      <div className="flex justify-between">
-                        <span>Last Activity:</span>
-                        <span>{activity.text}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Messages Today:</span>
-                        <span>{user.messageCount}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>IP Location:</span>
-                        <span>{user.location}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onViewUser(user.username);
-                        }}
-                        className="text-xs"
-                      >
-                        <Eye className="w-3 h-3 mr-1" />
-                        Visualizza Conversazioni
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                          <motion.div 
+                            className={`w-3 h-3 ${activity.color} rounded-full`}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: index * 0.1 + 0.4 }}
+                          ></motion.div>
+                        </motion.div>
+                        
+                        <motion.div 
+                          className="space-y-2 text-xs text-muted-foreground mb-4"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 + 0.3 }}
+                        >
+                          <div className="flex justify-between">
+                            <span>Last Activity:</span>
+                            <span>{activity.text}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Messages Today:</span>
+                            <span>{user.messageCount}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>IP Location:</span>
+                            <span>{user.location}</span>
+                          </div>
+                        </motion.div>
+                        
+                        <motion.div 
+                          className="flex justify-center"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 + 0.5 }}
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewUser(user.username);
+                            }}
+                            className="text-xs"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Visualizza Conversazioni
+                          </Button>
+                        </motion.div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         )}
         
         {/* Admin Actions - Solo Monitoraggio */}
