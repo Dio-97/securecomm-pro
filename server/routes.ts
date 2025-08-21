@@ -873,7 +873,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'auth':
             console.log('🔐 Tentativo autenticazione WebSocket:', message.username);
             const user = await storage.getUserByUsername(message.username);
-            if (user && await bcrypt.compare(message.password, user.password)) {
+            
+            // Verify password - handle both plain text and bcrypt hashed passwords
+            let isValidPassword = false;
+            if (user) {
+              if (user.password.startsWith('$2b$')) {
+                // Password is bcrypt hashed
+                isValidPassword = await bcrypt.compare(message.password, user.password);
+              } else {
+                // Password is plain text (legacy users)
+                isValidPassword = message.password === user.password;
+              }
+            }
+            
+            if (user && isValidPassword) {
               ws.userId = user.id;
               ws.username = user.username;
               ws.isAdmin = user.isAdmin || false;
