@@ -39,6 +39,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [showSearch, setShowSearch] = useState(false);
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showMyDeviceQR, setShowMyDeviceQR] = useState(false);
+  const [myDeviceQRCode, setMyDeviceQRCode] = useState<string>('');
   const { theme, toggleTheme } = useTheme();
 
   const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
@@ -168,8 +170,25 @@ export default function Conversations({ user, conversations, onSelectConversatio
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setShowQRScanner(true)}
-            title="Scan QR Code"
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/qr/generate-identity', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    userId: user.id, 
+                    username: user.username 
+                  })
+                });
+                
+                const data = await response.json();
+                setMyDeviceQRCode(data.qrCode);
+                setShowMyDeviceQR(true);
+              } catch (error) {
+                console.error('Failed to generate device QR:', error);
+              }
+            }}
+            title="Il mio QR dispositivo"
           >
             <QrCode className="w-4 h-4" />
           </Button>
@@ -355,6 +374,51 @@ export default function Conversations({ user, conversations, onSelectConversatio
         isVisible={showSecurityPanel}
         onClose={() => setShowSecurityPanel(false)}
       />
+
+      {/* My Device QR Modal */}
+      {showMyDeviceQR && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900 rounded-full">
+                <QrCode className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Il mio QR Dispositivo
+              </h3>
+              
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
+                Mostra questo QR ad altri utenti per verificare la tua identità nelle conversazioni.
+              </p>
+              
+              {myDeviceQRCode && (
+                <div className="bg-white p-4 rounded-lg border mx-auto max-w-64">
+                  <img 
+                    src={myDeviceQRCode} 
+                    alt="Il mio QR dispositivo" 
+                    className="w-full max-w-64 mx-auto"
+                  />
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-500">
+                Altri utenti possono scansionare questo QR per verificare la tua identità
+              </div>
+              
+              <Button 
+                onClick={() => {
+                  setShowMyDeviceQR(false);
+                  setMyDeviceQRCode('');
+                }}
+                className="w-full"
+              >
+                Chiudi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QR Scanner Modal */}
       <QRCodeModal

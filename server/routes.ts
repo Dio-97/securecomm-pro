@@ -31,6 +31,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
   const connectedClients = new Set<AuthenticatedWebSocket>();
+  
+  // Add health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      websocket: {
+        connected: connectedClients.size,
+        port: httpServer.listening ? "active" : "inactive"
+      }
+    });
+  });
 
   // Authentication endpoint
   app.post("/api/auth/login", async (req, res) => {
@@ -537,6 +548,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
+    console.log('WebSocket connection established');
+    connectedClients.add(ws);
+    
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
@@ -548,7 +562,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ws.userId = user.id;
               ws.username = user.username;
               ws.isAdmin = user.isAdmin || false;
-              connectedClients.add(ws);
               await storage.setUserOnline(user.id);
               
               ws.send(JSON.stringify({ 
