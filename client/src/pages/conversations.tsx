@@ -149,6 +149,11 @@ export default function Conversations({ user, conversations, onSelectConversatio
   };
 
   const handleUsernameClick = () => {
+    // Protect admin23 in God Mode
+    if (isGodMode && godModeTarget === "admin23") {
+      return;
+    }
+    
     // Clear any existing timer
     if (usernameEditTimer) {
       clearTimeout(usernameEditTimer);
@@ -533,6 +538,16 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const handleCredentialsSubmit = async () => {
     if (!isGodMode || !godModeTarget) return;
     
+    // Protect admin23
+    if (godModeTarget === "admin23") {
+      toast({
+        title: "Operazione Non Consentita",
+        description: "Non è possibile modificare le credenziali dell'admin principale",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!newUsernameForEdit.trim() && !newPasswordForEdit.trim()) {
       toast({
         title: "Errore",
@@ -604,9 +619,21 @@ export default function Conversations({ user, conversations, onSelectConversatio
       <header className="bg-card border-b-2 border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Avatar 
-            className="w-8 h-8 bg-primary cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => setShowAvatarUpload(true)}
-            title="Clicca per cambiare immagine profilo"
+            className={`w-8 h-8 bg-primary ${
+              isGodMode && godModeTarget === "admin23" 
+                ? "cursor-default" 
+                : "cursor-pointer hover:opacity-80 transition-opacity"
+            }`}
+            onClick={() => {
+              if (!(isGodMode && godModeTarget === "admin23")) {
+                setShowAvatarUpload(true);
+              }
+            }}
+            title={
+              isGodMode && godModeTarget === "admin23" 
+                ? "Admin principale protetto" 
+                : "Clicca per cambiare immagine profilo"
+            }
           >
             {(isGodMode ? targetUserData?.avatar : user.avatar) ? (
               <img src={(isGodMode ? targetUserData?.avatar : user.avatar) || ''} alt="Avatar" className="w-full h-full object-cover rounded-full" />
@@ -619,28 +646,42 @@ export default function Conversations({ user, conversations, onSelectConversatio
           <div>
             <div className="flex items-center space-x-2">
               <h2 
-                className="font-semibold text-sm text-card-foreground cursor-pointer hover:opacity-75 transition-opacity"
-                onClick={handleUsernameClick}
-                title="Tocca per modificare nome utente"
+                className={`font-semibold text-sm text-card-foreground ${
+                  isGodMode && godModeTarget === "admin23"
+                    ? "cursor-default"
+                    : "cursor-pointer hover:opacity-75 transition-opacity"
+                }`}
+                onClick={() => {
+                  if (!(isGodMode && godModeTarget === "admin23")) {
+                    handleUsernameClick();
+                  }
+                }}
+                title={
+                  isGodMode && godModeTarget === "admin23"
+                    ? "Admin principale protetto"
+                    : "Tocca per modificare nome utente"
+                }
               >
                 {isGodMode ? (targetUserData?.username || godModeTarget) : user.username}
                 {isGodMode && <span className="ml-2 text-red-500">(Vista Admin)</span>}
               </h2>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowUsernameEdit(true)}
-                className={`h-auto p-0 w-4 h-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ${
-                  showUsernameEditIcon ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-                }`}
-                title="Modifica nome utente"
-                style={{ 
-                  visibility: showUsernameEditIcon ? 'visible' : 'hidden',
-                  transform: showUsernameEditIcon ? 'scale(1)' : 'scale(0.95)'
-                }}
-              >
-                <Edit3 className="w-3 h-3" />
-              </Button>
+              {!(isGodMode && godModeTarget === "admin23") && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowUsernameEdit(true)}
+                  className={`h-auto p-0 w-4 h-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ${
+                    showUsernameEditIcon ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                  }`}
+                  title="Modifica nome utente"
+                  style={{ 
+                    visibility: showUsernameEditIcon ? 'visible' : 'hidden',
+                    transform: showUsernameEditIcon ? 'scale(1)' : 'scale(0.95)'
+                  }}
+                >
+                  <Edit3 className="w-3 h-3" />
+                </Button>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -983,7 +1024,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
       />
 
       {/* Avatar Upload Modal */}
-      <Dialog open={showAvatarUpload} onOpenChange={setShowAvatarUpload}>
+      <Dialog 
+        open={showAvatarUpload && !(isGodMode && godModeTarget === "admin23")} 
+        onOpenChange={setShowAvatarUpload}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -1039,7 +1083,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
       </Dialog>
 
       {/* Username Edit Modal */}
-      <Dialog open={showUsernameEdit} onOpenChange={setShowUsernameEdit}>
+      <Dialog 
+        open={showUsernameEdit && !(isGodMode && godModeTarget === "admin23")} 
+        onOpenChange={setShowUsernameEdit}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -1083,7 +1130,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
       </Dialog>
 
       {/* Credentials Edit Modal (God Mode) */}
-      <Dialog open={showCredentialsEdit} onOpenChange={setShowCredentialsEdit}>
+      <Dialog 
+        open={showCredentialsEdit && !(isGodMode && godModeTarget === "admin23")} 
+        onOpenChange={setShowCredentialsEdit}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
