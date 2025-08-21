@@ -174,10 +174,13 @@ export function useWebSocket() {
         userId: user?.id || '',
         recipientId,
         username: user?.username || '',
-        createdAt: new Date().toISOString(),
-        timestamp: new Date().toISOString(),
-        isEdited: false,
-        isEncrypted: true
+        timestamp: new Date(),
+        isEncrypted: true,
+        editedBy: null,
+        editedAt: null,
+        encryptedContent: null,
+        sessionId: null,
+        messageKey: null
       };
       
       setMessages(prev => [...prev, immediateMessage]);
@@ -192,10 +195,13 @@ export function useWebSocket() {
         userId: user?.id || '',
         recipientId,
         username: user?.username || '',
-        createdAt: new Date().toISOString(),
-        timestamp: new Date().toISOString(),
-        isEdited: false,
-        isEncrypted: true
+        timestamp: new Date(),
+        isEncrypted: true,
+        editedBy: null,
+        editedAt: null,
+        encryptedContent: null,
+        sessionId: null,
+        messageKey: null
       };
       
       setMessages(prev => [...prev, localMessage]);

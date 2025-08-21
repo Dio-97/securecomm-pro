@@ -22,13 +22,15 @@ export function MessageBubble({ message, isOwnMessage, canEdit, onEdit }: Messag
   const timestamp = message.timestamp ? format(new Date(message.timestamp), "HH:mm") : "";
 
   return (
-    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-2`}>
       <div className={`max-w-[70%] px-4 py-3 rounded-2xl shadow-sm ${
         isOwnMessage 
           ? 'bg-blue-600 text-white rounded-br-md' 
           : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border rounded-bl-md'
       }`}>
-        <p className="text-sm break-words font-medium text-foreground">{message.content}</p>
+        <p className={`text-sm break-words font-medium ${
+          isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-gray-100'
+        }`}>{message.content}</p>
         <div className={`flex items-center mt-1 space-x-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
           <span className="text-xs opacity-75">{timestamp}</span>
           {isOwnMessage && <CheckCheck className="w-3 h-3 opacity-75" />}
