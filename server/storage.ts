@@ -445,6 +445,17 @@ export class DatabaseStorage implements IStorage {
           )
         ).orderBy(desc(messages.timestamp)).limit(1);
         lastMessage = message || undefined;
+        
+        if (lastMessage) {
+          console.log(`📨 MESSAGGIO TROVATO per ${otherUser.username}:`, {
+            id: lastMessage.id,
+            content: lastMessage.content.substring(0, 20) + '...',
+            timestamp: lastMessage.timestamp,
+            da: lastMessage.username
+          });
+        } else {
+          console.log(`❌ NESSUN MESSAGGIO per ${otherUser.username} - conversazione solo salvata`);
+        }
       }
 
       // Includi la conversazione se: ha messaggi O è stata salvata esplicitamente
