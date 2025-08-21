@@ -625,24 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Promote user to admin endpoint
-  app.put("/api/admin/promote/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      
-      // Update user to admin status
-      const success = await storage.promoteUserToAdmin(userId);
-      
-      if (!success) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      res.json({ success: true, message: "User promoted to admin successfully" });
-    } catch (error) {
-      console.error("Error promoting user to admin:", error);
-      res.status(500).json({ error: "Failed to promote user" });
-    }
-  });
+
 
   // Get user by username endpoint (for God Mode)
   app.get("/api/user/by-username/:username", async (req, res) => {

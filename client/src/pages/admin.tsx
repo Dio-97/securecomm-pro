@@ -48,8 +48,6 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [inputsEnabled, setInputsEnabled] = useState(false);
-  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
-  const [promotingUser, setPromotingUser] = useState<AdminUser | null>(null);
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -199,39 +197,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
     setNewPassword("");
   };
 
-  const promoteToAdminMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      const response = await apiRequest("PUT", `/api/admin/promote/${userId}`, {});
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setShowPromoteDialog(false);
-      setPromotingUser(null);
-      toast({
-        title: "Utente promosso",
-        description: "L'utente è stato promosso ad amministratore",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Errore",
-        description: "Impossibile promuovere l'utente ad admin",
-        variant: "destructive",
-      });
-    }
-  });
 
-  const handlePromoteToAdmin = (user: AdminUser) => {
-    setPromotingUser(user);
-    setShowPromoteDialog(true);
-  };
-
-  const confirmPromoteToAdmin = () => {
-    if (promotingUser) {
-      promoteToAdminMutation.mutate(promotingUser.id);
-    }
-  };
 
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();
@@ -311,16 +277,15 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                         )}
                       </Avatar>
                       <div className="flex-1">
-                        <div className="flex items-center space-x-1">
-                          <h4 className="font-medium text-card-foreground">{user.name}</h4>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-card-foreground">{user.name}</h4>
+                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+                          </div>
                           {user.isAdmin && (
-                            <>
-                              <Crown className="w-3 h-3 text-yellow-500" />
-                              <span className="text-xs text-yellow-600">(admin)</span>
-                            </>
+                            <Crown className="w-4 h-4 text-yellow-500 ml-2" />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
                       </div>
                       <div className={`w-3 h-3 ${activity.color} rounded-full`}></div>
                     </div>
@@ -340,7 +305,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       </div>
                     </div>
                     
-                    <div className="flex justify-between mt-4 space-x-1">
+                    <div className="flex justify-between mt-4 space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -353,20 +318,6 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                         <Eye className="w-3 h-3 mr-1" />
                         View
                       </Button>
-                      {!user.isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePromoteToAdmin(user);
-                          }}
-                          className="text-xs"
-                          title="Promuovi ad admin"
-                        >
-                          <Crown className="w-3 h-3" />
-                        </Button>
-                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -475,34 +426,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
         </DialogContent>
       </Dialog>
 
-      {/* Promote to Admin Dialog */}
-      <Dialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Promuovi ad Admin - {promotingUser?.username}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Sei sicuro di voler promuovere <strong>@{promotingUser?.username}</strong> ad amministratore?
-            </p>
-            <p className="text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950 p-3 rounded">
-              ⚠️ Gli amministratori hanno accesso completo al sistema e possono gestire tutti gli utenti.
-            </p>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowPromoteDialog(false)}>
-              Annulla
-            </Button>
-            <Button 
-              onClick={confirmPromoteToAdmin}
-              disabled={promoteToAdminMutation.isPending}
-              className="bg-yellow-600 hover:bg-yellow-700"
-            >
-              {promoteToAdminMutation.isPending ? "Promuovendo..." : "Promuovi ad Admin"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
