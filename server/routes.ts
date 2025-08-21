@@ -764,7 +764,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // WebSocket connection handling
-  const MAX_CONNECTIONS = 20;
   const CLEANUP_INTERVAL = 30000; // 30 seconds
   
   // Cache delle conversazioni per ogni utente  
