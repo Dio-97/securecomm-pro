@@ -839,8 +839,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 message: newMessage 
               };
               
-              // Invia al destinatario
+              console.log('💬 Inviando messaggio istantaneo:', {
+                senderId: ws.userId,
+                recipientId: message.recipientId,
+                content: message.content.substring(0, 50) + '...'
+              });
+              
+              // Invia IMMEDIATAMENTE al destinatario
               if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
+                console.log('✅ Invio al destinatario:', message.recipientId);
                 recipientClient.send(JSON.stringify(messageData));
                 
                 // Aggiorna anche la lista conversazioni del destinatario
@@ -849,10 +856,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   type: 'conversations_updated',
                   conversations: recipientConversations
                 }));
+              } else {
+                console.log('❌ Destinatario non connesso:', message.recipientId);
               }
               
-              // Invia al mittente
+              // Invia IMMEDIATAMENTE al mittente per conferma
               if (senderClient && senderClient.readyState === WebSocket.OPEN) {
+                console.log('✅ Conferma al mittente:', ws.userId);
                 senderClient.send(JSON.stringify(messageData));
                 
                 // Aggiorna anche la lista conversazioni del mittente

@@ -78,6 +78,7 @@ export default function Chat({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    console.log('📨 Messaggi aggiornati nella chat:', messages.length);
   }, [messages]);
 
   const handleSendMessage = () => {

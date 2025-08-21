@@ -37,6 +37,7 @@ export function useWebSocket() {
 
     ws.current.onmessage = (event) => {
       const message: WebSocketMessage = JSON.parse(event.data);
+      console.log('📨 WebSocket messaggio ricevuto:', message.type);
       
       switch (message.type) {
         case 'auth_success':
@@ -48,7 +49,15 @@ export function useWebSocket() {
           break;
           
         case 'new_message':
-          setMessages(prev => [...prev, message.message]);
+          console.log('💬 Nuovo messaggio ricevuto:', message.message);
+          setMessages(prev => {
+            // Evita duplicati controllando l'ID del messaggio
+            const exists = prev.find(m => m.id === message.message.id);
+            if (!exists) {
+              return [...prev, message.message];
+            }
+            return prev;
+          });
           break;
           
         case 'message_history':
@@ -60,6 +69,7 @@ export function useWebSocket() {
           break;
           
         case 'conversations_updated':
+          console.log('📄 Lista conversazioni aggiornata:', message.conversations.length);
           setConversations(message.conversations);
           break;
           
@@ -111,6 +121,7 @@ export function useWebSocket() {
 
   const sendMessage = (content: string, recipientId: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
+      console.log('🚀 Invio messaggio:', { content, recipientId });
       ws.current.send(JSON.stringify({ 
         type: 'send_message', 
         content,

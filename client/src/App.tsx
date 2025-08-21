@@ -184,6 +184,7 @@ function AppContent() {
           recipientId={currentConversation.userId}
           recipientUsername={currentConversation.username}
           onSendMessage={sendMessage}
+          getUserPresenceStatus={getUserPresenceStatus}
           onBack={handleBackToConversations}
           onLogout={handleLogout}
           isGodMode={isGodMode}
