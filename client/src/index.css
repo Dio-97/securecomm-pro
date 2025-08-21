@@ -23,7 +23,7 @@
     #080b0f 96%,
     #000000 100%
   );
-  transition: background 0.4s ease;
+  transition: background 0.48s ease;
 }
 
 .messaging-background.dark {
@@ -44,7 +44,7 @@
     #e9ecef 96%,
     #f8f9fa 100%
   );
-  transition: background 0.4s ease;
+  transition: background 0.48s ease;
 }
 
 /* Diagonal Grayscale Chat Background */
@@ -162,13 +162,13 @@
 @layer base {
   * {
     @apply border-border;
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: background-color 0.36s ease, color 0.36s ease, border-color 0.36s ease, box-shadow 0.36s ease;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-family: 'Inter', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.36s ease, color 0.36s ease;
   }
 }
 
