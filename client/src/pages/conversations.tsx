@@ -45,6 +45,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [myDeviceQRCode, setMyDeviceQRCode] = useState<string>('');
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
+  const [showUsernameEditIcon, setShowUsernameEditIcon] = useState(false);
+  const [usernameEditTimer, setUsernameEditTimer] = useState<NodeJS.Timeout | null>(null);
   const [newUsername, setNewUsername] = useState(user.username);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -54,6 +56,32 @@ export default function Conversations({ user, conversations, onSelectConversatio
       onUserUpdate(newData);
     }
   };
+
+  const handleUsernameClick = () => {
+    // Clear any existing timer
+    if (usernameEditTimer) {
+      clearTimeout(usernameEditTimer);
+    }
+    
+    // Show the edit icon with fade animation
+    setShowUsernameEditIcon(true);
+    
+    // Set timer to hide the icon after 3 seconds
+    const timer = setTimeout(() => {
+      setShowUsernameEditIcon(false);
+    }, 3000);
+    
+    setUsernameEditTimer(timer);
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameEditTimer) {
+        clearTimeout(usernameEditTimer);
+      }
+    };
+  }, [usernameEditTimer]);
 
   const handleRemoveConversation = async (otherUserId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent conversation from opening
@@ -275,13 +303,25 @@ export default function Conversations({ user, conversations, onSelectConversatio
           </Avatar>
           <div>
             <div className="flex items-center space-x-2">
-              <h2 className="font-semibold text-sm text-card-foreground">{user.username}</h2>
+              <h2 
+                className="font-semibold text-sm text-card-foreground cursor-pointer hover:opacity-75 transition-opacity"
+                onClick={handleUsernameClick}
+                title="Tocca per modificare nome utente"
+              >
+                {user.username}
+              </h2>
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => setShowUsernameEdit(true)}
-                className="h-auto p-0 w-4 h-4 hover:bg-gray-200 dark:hover:bg-gray-700"
+                className={`h-auto p-0 w-4 h-4 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ${
+                  showUsernameEditIcon ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                }`}
                 title="Modifica nome utente"
+                style={{ 
+                  visibility: showUsernameEditIcon ? 'visible' : 'hidden',
+                  transform: showUsernameEditIcon ? 'scale(1)' : 'scale(0.95)'
+                }}
               >
                 <Edit3 className="w-3 h-3" />
               </Button>
