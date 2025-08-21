@@ -4,272 +4,80 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ultra-Detailed 4K Marble Background */
+/* Diagonal Grayscale Background */
 .messaging-background {
-  background-color: #2d2d2d;
-  background-image: 
-    /* Fine marble veins - Primary layer */
-    linear-gradient(42deg, rgba(255, 255, 255, 0.25) 0.5px, transparent 0.5px),
-    linear-gradient(-42deg, rgba(255, 255, 255, 0.15) 0.3px, transparent 0.3px),
-    linear-gradient(138deg, rgba(255, 255, 255, 0.08) 0.2px, transparent 0.2px),
-    
-    /* Secondary veining system */
-    linear-gradient(85deg, rgba(0, 0, 0, 0.18) 1px, rgba(255, 255, 255, 0.12) 2px, rgba(0, 0, 0, 0.15) 3px, transparent 4px),
-    linear-gradient(-95deg, rgba(255, 255, 255, 0.22) 1px, rgba(0, 0, 0, 0.25) 2px, rgba(255, 255, 255, 0.18) 3px, transparent 5px),
-    
-    /* Complex marble formations */
-    linear-gradient(125deg, 
-      transparent 15%, 
-      rgba(0, 0, 0, 0.12) 18%, 
-      rgba(255, 255, 255, 0.08) 22%, 
-      rgba(0, 0, 0, 0.15) 25%, 
-      rgba(255, 255, 255, 0.12) 28%, 
-      rgba(0, 0, 0, 0.1) 32%, 
-      transparent 35%
-    ),
-    linear-gradient(-115deg, 
-      transparent 20%, 
-      rgba(255, 255, 255, 0.18) 23%, 
-      rgba(0, 0, 0, 0.2) 27%, 
-      rgba(255, 255, 255, 0.15) 30%, 
-      rgba(0, 0, 0, 0.18) 33%, 
-      rgba(255, 255, 255, 0.1) 37%, 
-      transparent 40%
-    ),
-    
-    /* Crystalline structures */
-    linear-gradient(65deg, 
-      transparent 45%, 
-      rgba(255, 255, 255, 0.2) 48%, 
-      rgba(0, 0, 0, 0.1) 50%, 
-      rgba(255, 255, 255, 0.25) 52%, 
-      rgba(0, 0, 0, 0.12) 54%, 
-      rgba(255, 255, 255, 0.15) 56%, 
-      transparent 60%
-    ),
-    
-    /* Luminous veins for depth */
-    linear-gradient(155deg, rgba(255, 255, 255, 0.35) 0%, transparent 15%, rgba(255, 255, 255, 0.2) 30%, transparent 45%, rgba(255, 255, 255, 0.1) 60%, transparent 75%),
-    
-    /* Natural marble patterns */
-    radial-gradient(ellipse 800px 400px at 15% 65%, rgba(255, 255, 255, 0.28) 0%, rgba(0, 0, 0, 0.1) 25%, transparent 50%),
-    radial-gradient(ellipse 600px 300px at 85% 25%, rgba(0, 0, 0, 0.4) 0%, rgba(255, 255, 255, 0.05) 30%, transparent 60%),
-    radial-gradient(ellipse 400px 800px at 50% 80%, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.2) 35%, transparent 70%),
-    
-    /* Micro-details for 4K resolution */
-    repeating-linear-gradient(43deg, transparent, transparent 8px, rgba(255, 255, 255, 0.03) 8px, rgba(255, 255, 255, 0.03) 9px),
-    repeating-linear-gradient(-47deg, transparent, transparent 12px, rgba(0, 0, 0, 0.05) 12px, rgba(0, 0, 0, 0.05) 13px);
-    
-  background-size: 
-    80px 80px, 60px 60px, 40px 40px,
-    500px 300px, 450px 280px,
-    800px 600px, 750px 550px,
-    600px 400px,
-    1200px 900px,
-    1600px 800px, 1200px 600px, 800px 1600px,
-    160px 160px, 240px 240px;
-    
-  background-position: 
-    0 0, 25px 25px, 15px 15px,
-    0 0, 150px 0,
-    0 0, 200px 100px,
-    300px 200px,
-    -300px 0,
-    -200px -100px, 300px -150px, 100px -400px,
-    0 0, 80px 80px;
+  background: linear-gradient(
+    135deg,
+    #f8f9fa 0%,
+    #e9ecef 8%,
+    #dee2e6 16%,
+    #ced4da 24%,
+    #adb5bd 32%,
+    #6c757d 40%,
+    #495057 48%,
+    #343a40 56%,
+    #212529 64%,
+    #1a1e21 72%,
+    #131619 80%,
+    #0d1117 88%,
+    #080b0f 96%,
+    #000000 100%
+  );
 }
 
 .messaging-background.dark {
-  background-color: #1d1d1d;
-  background-image: 
-    /* Ultra-fine dark marble veins */
-    linear-gradient(42deg, rgba(255, 255, 255, 0.12) 0.5px, transparent 0.5px),
-    linear-gradient(-42deg, rgba(255, 255, 255, 0.08) 0.3px, transparent 0.3px),
-    linear-gradient(138deg, rgba(255, 255, 255, 0.04) 0.2px, transparent 0.2px),
-    
-    /* Dark theme veining */
-    linear-gradient(85deg, rgba(0, 0, 0, 0.3) 1px, rgba(255, 255, 255, 0.06) 2px, rgba(0, 0, 0, 0.25) 3px, transparent 4px),
-    linear-gradient(-95deg, rgba(255, 255, 255, 0.1) 1px, rgba(0, 0, 0, 0.4) 2px, rgba(255, 255, 255, 0.08) 3px, transparent 5px),
-    
-    /* Complex dark formations */
-    linear-gradient(125deg, 
-      transparent 15%, 
-      rgba(0, 0, 0, 0.2) 18%, 
-      rgba(255, 255, 255, 0.04) 22%, 
-      rgba(0, 0, 0, 0.25) 25%, 
-      rgba(255, 255, 255, 0.06) 28%, 
-      rgba(0, 0, 0, 0.18) 32%, 
-      transparent 35%
-    ),
-    linear-gradient(-115deg, 
-      transparent 20%, 
-      rgba(255, 255, 255, 0.08) 23%, 
-      rgba(0, 0, 0, 0.35) 27%, 
-      rgba(255, 255, 255, 0.06) 30%, 
-      rgba(0, 0, 0, 0.3) 33%, 
-      rgba(255, 255, 255, 0.04) 37%, 
-      transparent 40%
-    ),
-    
-    /* Dark crystalline structures */
-    linear-gradient(65deg, 
-      transparent 45%, 
-      rgba(255, 255, 255, 0.1) 48%, 
-      rgba(0, 0, 0, 0.2) 50%, 
-      rgba(255, 255, 255, 0.12) 52%, 
-      rgba(0, 0, 0, 0.25) 54%, 
-      rgba(255, 255, 255, 0.08) 56%, 
-      transparent 60%
-    ),
-    
-    /* Subtle luminous veins */
-    linear-gradient(155deg, rgba(255, 255, 255, 0.15) 0%, transparent 15%, rgba(255, 255, 255, 0.08) 30%, transparent 45%, rgba(255, 255, 255, 0.04) 60%, transparent 75%),
-    
-    /* Dark marble patterns */
-    radial-gradient(ellipse 800px 400px at 15% 65%, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.2) 25%, transparent 50%),
-    radial-gradient(ellipse 600px 300px at 85% 25%, rgba(0, 0, 0, 0.5) 0%, rgba(255, 255, 255, 0.02) 30%, transparent 60%),
-    radial-gradient(ellipse 400px 800px at 50% 80%, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.35) 35%, transparent 70%),
-    
-    /* 4K dark micro-details */
-    repeating-linear-gradient(43deg, transparent, transparent 8px, rgba(255, 255, 255, 0.015) 8px, rgba(255, 255, 255, 0.015) 9px),
-    repeating-linear-gradient(-47deg, transparent, transparent 12px, rgba(0, 0, 0, 0.08) 12px, rgba(0, 0, 0, 0.08) 13px);
-    
-  background-size: 
-    80px 80px, 60px 60px, 40px 40px,
-    500px 300px, 450px 280px,
-    800px 600px, 750px 550px,
-    600px 400px,
-    1200px 900px,
-    1600px 800px, 1200px 600px, 800px 1600px,
-    160px 160px, 240px 240px;
-    
-  background-position: 
-    0 0, 25px 25px, 15px 15px,
-    0 0, 150px 0,
-    0 0, 200px 100px,
-    300px 200px,
-    -300px 0,
-    -200px -100px, 300px -150px, 100px -400px,
-    0 0, 80px 80px;
+  background: linear-gradient(
+    135deg,
+    #000000 0%,
+    #080b0f 8%,
+    #0d1117 16%,
+    #131619 24%,
+    #1a1e21 32%,
+    #212529 40%,
+    #343a40 48%,
+    #495057 56%,
+    #6c757d 64%,
+    #adb5bd 72%,
+    #ced4da 80%,
+    #dee2e6 88%,
+    #e9ecef 96%,
+    #f8f9fa 100%
+  );
 }
 
-/* Ultra-Detailed 4K Chat Marble Background */
+/* Diagonal Grayscale Chat Background */
 .chat-background {
-  background-color: #353535;
-  background-image: 
-    /* Ultra-fine marble veins */
-    linear-gradient(38deg, rgba(255, 255, 255, 0.22) 0.4px, transparent 0.4px),
-    linear-gradient(-38deg, rgba(255, 255, 255, 0.12) 0.3px, transparent 0.3px),
-    linear-gradient(128deg, rgba(255, 255, 255, 0.06) 0.2px, transparent 0.2px),
-    linear-gradient(-52deg, rgba(255, 255, 255, 0.04) 0.15px, transparent 0.15px),
-    
-    /* Intricate veining patterns */
-    linear-gradient(75deg, 
-      rgba(0, 0, 0, 0.15) 0.8px, 
-      rgba(255, 255, 255, 0.1) 1.2px, 
-      rgba(0, 0, 0, 0.12) 1.8px, 
-      rgba(255, 255, 255, 0.08) 2.2px, 
-      transparent 3px
-    ),
-    linear-gradient(-85deg, 
-      rgba(255, 255, 255, 0.18) 0.6px, 
-      rgba(0, 0, 0, 0.2) 1.4px, 
-      rgba(255, 255, 255, 0.15) 2px, 
-      rgba(0, 0, 0, 0.15) 2.6px, 
-      transparent 3.5px
-    ),
-    
-    /* Complex marble striations */
-    linear-gradient(115deg, 
-      transparent 10%, 
-      rgba(0, 0, 0, 0.1) 12%, 
-      rgba(255, 255, 255, 0.06) 15%, 
-      rgba(0, 0, 0, 0.12) 18%, 
-      rgba(255, 255, 255, 0.09) 21%, 
-      rgba(0, 0, 0, 0.08) 24%, 
-      rgba(255, 255, 255, 0.05) 27%, 
-      rgba(0, 0, 0, 0.1) 30%, 
-      transparent 33%
-    ),
-    linear-gradient(-105deg, 
-      transparent 15%, 
-      rgba(255, 255, 255, 0.15) 18%, 
-      rgba(0, 0, 0, 0.18) 22%, 
-      rgba(255, 255, 255, 0.12) 25%, 
-      rgba(0, 0, 0, 0.15) 28%, 
-      rgba(255, 255, 255, 0.08) 32%, 
-      rgba(0, 0, 0, 0.12) 35%, 
-      rgba(255, 255, 255, 0.06) 38%, 
-      transparent 42%
-    ),
-    
-    /* Marble crystalline formations */
-    linear-gradient(72deg, 
-      transparent 40%, 
-      rgba(255, 255, 255, 0.16) 42%, 
-      rgba(0, 0, 0, 0.08) 44%, 
-      rgba(255, 255, 255, 0.2) 46%, 
-      rgba(0, 0, 0, 0.1) 48%, 
-      rgba(255, 255, 255, 0.18) 50%, 
-      rgba(0, 0, 0, 0.06) 52%, 
-      rgba(255, 255, 255, 0.12) 54%, 
-      transparent 58%
-    ),
-    
-    /* Luminescent marble veins */
-    linear-gradient(145deg, 
-      rgba(255, 255, 255, 0.3) 0%, 
-      transparent 12%, 
-      rgba(255, 255, 255, 0.18) 25%, 
-      transparent 37%, 
-      rgba(255, 255, 255, 0.12) 50%, 
-      transparent 62%, 
-      rgba(255, 255, 255, 0.08) 75%, 
-      transparent 87%
-    ),
-    
-    /* Natural marble formations */
-    radial-gradient(ellipse 700px 350px at 25% 55%, rgba(255, 255, 255, 0.25) 0%, rgba(0, 0, 0, 0.08) 20%, transparent 45%),
-    radial-gradient(ellipse 500px 250px at 75% 35%, rgba(0, 0, 0, 0.35) 0%, rgba(255, 255, 255, 0.04) 25%, transparent 55%),
-    radial-gradient(ellipse 350px 700px at 45% 75%, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.18) 30%, transparent 65%),
-    radial-gradient(ellipse 600px 400px at 10% 20%, rgba(0, 0, 0, 0.2) 0%, rgba(255, 255, 255, 0.06) 35%, transparent 70%),
-    
-    /* 4K micro-texture details */
-    repeating-linear-gradient(41deg, transparent, transparent 6px, rgba(255, 255, 255, 0.025) 6px, rgba(255, 255, 255, 0.025) 7px),
-    repeating-linear-gradient(-49deg, transparent, transparent 9px, rgba(0, 0, 0, 0.04) 9px, rgba(0, 0, 0, 0.04) 10px),
-    repeating-linear-gradient(83deg, transparent, transparent 15px, rgba(255, 255, 255, 0.02) 15px, rgba(255, 255, 255, 0.02) 16px);
-    
-  background-size: 
-    60px 60px, 45px 45px, 30px 30px, 25px 25px,
-    400px 250px, 350px 220px,
-    650px 500px, 600px 450px,
-    500px 350px,
-    1000px 750px,
-    1400px 700px, 1000px 500px, 700px 1400px, 1200px 800px,
-    120px 120px, 180px 180px, 300px 300px;
-    
-  background-position: 
-    0 0, 20px 20px, 10px 10px, 5px 5px,
-    0 0, 120px 0,
-    0 0, 150px 80px,
-    250px 150px,
-    -250px 0,
-    -150px -80px, 250px -120px, 80px -350px, 200px 300px,
-    0 0, 60px 60px, 150px 150px;
+  background: linear-gradient(
+    135deg,
+    #f1f3f4 0%,
+    #e8eaed 10%,
+    #dadce0 20%,
+    #bdc1c6 30%,
+    #9aa0a6 40%,
+    #80868b 50%,
+    #5f6368 60%,
+    #3c4043 70%,
+    #202124 80%,
+    #171717 90%,
+    #0f0f0f 100%
+  );
 }
 
 .chat-background.dark {
-  background-color: #1e1e1e;
-  background-image: 
-    linear-gradient(35deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(-35deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(110deg, rgba(0, 0, 0, 0.15) 25%, rgba(255, 255, 255, 0.04) 30%, rgba(0, 0, 0, 0.12) 35%),
-    linear-gradient(-110deg, rgba(255, 255, 255, 0.05) 15%, rgba(0, 0, 0, 0.2) 20%, rgba(255, 255, 255, 0.03) 25%),
-    linear-gradient(70deg, rgba(0, 0, 0, 0.08) 45%, rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.15) 55%),
-    radial-gradient(ellipse at 30% 60%, rgba(255, 255, 255, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 40%, rgba(0, 0, 0, 0.3) 0%, transparent 50%);
-  background-size: 150px 150px, 130px 130px, 300px 250px, 280px 200px, 250px 180px, 400px 300px, 350px 280px;
-  background-position: 0 0, 40px 40px, 0 0, 80px 0, 160px 80px, -80px -40px, 120px -80px;
+  background: linear-gradient(
+    135deg,
+    #0f0f0f 0%,
+    #171717 10%,
+    #202124 20%,
+    #3c4043 30%,
+    #5f6368 40%,
+    #80868b 50%,
+    #9aa0a6 60%,
+    #bdc1c6 70%,
+    #dadce0 80%,
+    #e8eaed 90%,
+    #f1f3f4 100%
+  );
 }
 
 :root {
