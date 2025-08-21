@@ -287,11 +287,16 @@ export function useWebSocket() {
       
       // Send WebSocket message to leave conversation
       if (ws.current?.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({ 
+        const leaveMessage = { 
           type: 'leave_conversation', 
           otherUserId: userId2,
           userId: userId1
-        }));
+        };
+        console.log(`📡 INVIO leave_conversation WebSocket:`, leaveMessage);
+        ws.current.send(JSON.stringify(leaveMessage));
+        console.log(`✅ leave_conversation inviato al server WebSocket`);
+      } else {
+        console.error(`❌ WebSocket NON CONNESSO per leave_conversation - ReadyState:`, ws.current?.readyState);
       }
       
       // Cancella i messaggi localmente per questo utente

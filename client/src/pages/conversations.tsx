@@ -850,7 +850,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
         <div className="p-4">
           <h3 className="text-lg font-semibold mb-4 text-foreground">Messages</h3>
           
-          {conversations.length === 0 ? (
+          {!conversations || conversations.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h4 className="font-medium text-foreground mb-2">No conversations yet</h4>
