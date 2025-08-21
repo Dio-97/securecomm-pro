@@ -1,4 +1,7 @@
 import { type User, type Message, type InsertUser, type Invitation, type SavedConversation, type SharedFile, type CryptoSession } from "@shared/schema";
+import { users, messages, invitations, savedConversations, sharedFiles, cryptoSessions } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, or, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
 
@@ -42,449 +45,150 @@ export interface IStorage {
   markInvitationUsed(email: string): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private messages: Map<string, Message>;
-  private invitations: Map<string, Invitation>;
-  private savedConversations: Map<string, SavedConversation>;
-  private activeConversations: Map<string, Set<string>>; // conversationId -> Set of active userIds
-  private onlineUsers: Set<string>; // Set of online user IDs
+export class DatabaseStorage implements IStorage {
+  private activeConversations: Map<string, Set<string>> = new Map();
+  private onlineUsers: Set<string> = new Set();
 
   constructor() {
-    this.users = new Map();
-    this.messages = new Map();
-    this.invitations = new Map();
-    this.savedConversations = new Map();
-    this.activeConversations = new Map();
-    this.onlineUsers = new Set();
-    
-    // Start VPN load balancing
+    this.initializeDatabase();
     vpnService.startLoadBalancing();
-    
-    // Create admin user
-    const adminId = randomUUID();
+  }
+
+  private async initializeDatabase() {
+    // Check if admin user exists
+    const adminUser = await this.getUserByUsername("admin23");
+    if (!adminUser) {
+      await this.createAdminUser();
+    }
+  }
+
+  private async createAdminUser() {
     const adminRealIp = this.generateRandomIP();
     const { maskedIp: adminMaskedIp, vpnServer: adminVpnServer } = vpnService.maskIP(adminRealIp);
-    
-    const admin: User = {
-      id: adminId,
+
+    await db.insert(users).values({
       username: "admin23",
       password: "5550123",
-      avatar: null,
       isAdmin: true,
       isInvited: true,
-      invitedBy: null,
       lastActivity: new Date(),
-      location: "Secure Network",
-      messageCount: "0",
+      location: "🏢 HQ Office",
       realIp: adminRealIp,
       maskedIp: adminMaskedIp,
-      vpnServer: adminVpnServer.name,
-      vpnCountry: adminVpnServer.country,
-      // Crypto fields - will be populated properly later
-      identityKey: null,
-      publicKey: null,
-      privateKey: null,
-      signedPreKey: null,
-      oneTimeKeys: null,
-      verificationQR: null,
+      vpnServer: adminVpnServer.name || "Zurich-01",
+      vpnCountry: "Switzerland",
+      messageCount: "0",
       isVerified: true,
-    };
-    this.users.set(adminId, admin);
-    
-    // Create some demo users
-    const demoUsers = [
-      { username: "john.doe", name: "John Doe", location: "Milan, IT" },
-      { username: "maria.rossi", name: "Maria Rossi", location: "Rome, IT" },
-      { username: "luca.bianchi", name: "Luca Bianchi", location: "Naples, IT" }
-    ];
-    
-    demoUsers.forEach(user => {
-      const id = randomUUID();
-      const realIp = this.generateRandomIP();
-      const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
-      
-      const demoUser: User = {
-        id,
-        username: user.username,
-        password: "demo123",
-        avatar: null,
-        isAdmin: false,
-        isInvited: true,
-        invitedBy: adminId,
-        lastActivity: new Date(),
-        location: `${vpnServer.city}, ${vpnServer.country}`,
-        messageCount: Math.floor(Math.random() * 100).toString(),
-        realIp,
-        maskedIp,
-        vpnServer: vpnServer.name,
-        vpnCountry: vpnServer.country,
-        // Crypto fields - will be populated properly later
-        identityKey: null,
-        publicKey: null,
-        privateKey: null,
-        signedPreKey: null,
-        oneTimeKeys: null,
-        verificationQR: null,
-        isVerified: false,
-      };
-      this.users.set(id, demoUser);
     });
   }
 
+  private generateRandomIP(): string {
+    return Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
+  }
+
+  // User management
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
-  async createUser(insertUser: InsertUser & { isInvited?: boolean; invitedBy?: string }): Promise<User> {
-    const id = randomUUID();
-    
-    // Generate VPN masking for new user
+  async createUser(userData: InsertUser & { isInvited?: boolean; invitedBy?: string }): Promise<User> {
     const realIp = this.generateRandomIP();
     const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
-    
-    const user: User = { 
-      ...insertUser, 
-      id,
-      avatar: null,
-      isAdmin: false,
-      // Crypto fields - will be populated properly later
-      identityKey: null,
-      publicKey: null,
-      privateKey: null,
-      signedPreKey: null,
-      oneTimeKeys: null,
-      verificationQR: null,
-      isVerified: false,
-      isInvited: insertUser.isInvited || false,
-      invitedBy: insertUser.invitedBy || null,
+
+    const [user] = await db.insert(users).values({
+      ...userData,
       lastActivity: new Date(),
-      location: `${vpnServer.city}, ${vpnServer.country}`,
-      messageCount: "0",
+      location: "🏢 Office",
       realIp,
       maskedIp,
-      vpnServer: vpnServer.name,
-      vpnCountry: vpnServer.country,
-    };
-    this.users.set(id, user);
+      vpnServer: vpnServer.name || "Rome-01",
+      vpnCountry: "Italy",
+      messageCount: "0",
+      isVerified: false,
+    }).returning();
+
     return user;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values()).filter(user => !user.isAdmin);
-  }
-
   async createUserWithCredentials(invitedBy: string): Promise<{ user: User; credentials: { username: string; password: string } }> {
-    // Generate secure credentials
-    const username = `user_${Math.random().toString(36).substring(2, 8)}`;
-    const password = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 8).toUpperCase() + "@" + Math.floor(Math.random() * 99);
+    const adjectives = ["Smart", "Wise", "Bold", "Swift", "Calm", "Bright", "Sharp", "Quick"];
+    const nouns = ["Fox", "Eagle", "Lion", "Wolf", "Bear", "Hawk", "Tiger", "Lynx"];
     
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const number = Math.floor(Math.random() * 99) + 1;
+    
+    const username = `${adjective}${noun}${number}`;
+    const password = Math.random().toString(36).substring(2, 12);
+
     const user = await this.createUser({
       username,
       password,
       isInvited: true,
-      invitedBy
+      invitedBy,
     });
-    
-    return {
-      user,
-      credentials: { username, password }
-    };
+
+    return { user, credentials: { username, password } };
   }
 
   async deleteUser(userId: string): Promise<boolean> {
-    const user = this.users.get(userId);
-    if (!user || user.isAdmin) {
-      return false; // Cannot delete admin or non-existent users
-    }
-    
-    // Delete user's messages
-    const userMessages = Array.from(this.messages.values()).filter(msg => msg.userId === userId);
-    userMessages.forEach(msg => this.messages.delete(msg.id));
-    
-    // Delete user
-    return this.users.delete(userId);
+    const result = await db.delete(users).where(eq(users.id, userId));
+    return result.rowCount! > 0;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async updateUserActivity(userId: string, realIp?: string): Promise<void> {
-    const user = this.users.get(userId);
-    if (user) {
-      user.lastActivity = new Date();
-      
-      // Update IP if provided
-      if (realIp && realIp !== user.realIp) {
-        user.realIp = realIp;
-        
-        // Re-mask the new IP
-        const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
-        user.maskedIp = maskedIp;
-        user.vpnServer = vpnServer.name;
-        user.vpnCountry = vpnServer.country;
-        user.location = `${vpnServer.city}, ${vpnServer.country}`;
-      }
-      
-      this.users.set(userId, user);
+    const updates: Partial<User> = { lastActivity: new Date() };
+    if (realIp) {
+      updates.realIp = realIp;
+      const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
+      updates.maskedIp = maskedIp;
+      updates.vpnServer = vpnServer.name || "Rome-01";
     }
+    await db.update(users).set(updates).where(eq(users.id, userId));
   }
 
   async rotateUserVPN(userId: string): Promise<User | undefined> {
-    const user = this.users.get(userId);
-    if (user && user.realIp) {
-      const currentVpnId = vpnService.getAllServers().find(s => s.name === user.vpnServer)?.id;
-      const { maskedIp, vpnServer } = vpnService.rotateVPN(currentVpnId);
-      
-      user.maskedIp = maskedIp;
-      user.vpnServer = vpnServer.name;
-      user.vpnCountry = vpnServer.country;
-      user.location = `${vpnServer.city}, ${vpnServer.country}`;
-      
-      this.users.set(userId, user);
-      return user;
-    }
-    return undefined;
-  }
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
 
-  async createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message> {
-    const id = randomUUID();
-    const newMessage: Message = {
-      id,
-      content: message.content,
-      userId: message.userId,
-      recipientId: message.recipientId,
-      username: message.username,
-      timestamp: new Date(),
-      isEncrypted: true,
-      editedBy: null,
-      editedAt: null,
-      // Crypto fields - will be populated properly later
-      encryptedContent: null,
-      sessionId: null,
-      messageKey: null,
-    };
-    this.messages.set(id, newMessage);
+    const rotationResult = vpnService.rotateVPN();
     
-    // Update user message count
-    const user = this.users.get(message.userId);
-    if (user && user.messageCount) {
-      user.messageCount = (parseInt(user.messageCount) + 1).toString();
-      this.users.set(message.userId, user);
-    }
-    
-    return newMessage;
+    const [updatedUser] = await db.update(users).set({
+      maskedIp: rotationResult.maskedIp,
+      vpnServer: rotationResult.vpnServer.name || "Rome-01", 
+      vpnCountry: rotationResult.vpnServer.country || "Italy",
+      location: rotationResult.vpnServer.location || "🏢 Office",
+    }).where(eq(users.id, userId)).returning();
+
+    return updatedUser || undefined;
   }
 
-  async clearConversation(userId1: string, userId2: string): Promise<void> {
-    // Delete all messages between these two users
-    const messagesToDelete = Array.from(this.messages.values()).filter(message => 
-      (message.userId === userId1 && message.recipientId === userId2) ||
-      (message.userId === userId2 && message.recipientId === userId1)
-    );
-    
-    messagesToDelete.forEach(message => {
-      this.messages.delete(message.id);
-    });
+  async updateUsername(userId: string, username: string): Promise<boolean> {
+    const result = await db.update(users).set({ username }).where(eq(users.id, userId));
+    return result.rowCount! > 0;
   }
 
-  // Track active users in conversations
-  joinConversation(userId1: string, userId2: string, activeUserId: string): void {
-    const conversationId = this.getConversationId(userId1, userId2);
-    if (!this.activeConversations.has(conversationId)) {
-      this.activeConversations.set(conversationId, new Set());
-    }
-    this.activeConversations.get(conversationId)!.add(activeUserId);
+  async updateUserAvatar(userId: string, avatar: string): Promise<boolean> {
+    const result = await db.update(users).set({ avatar }).where(eq(users.id, userId));
+    return result.rowCount! > 0;
   }
 
-  leaveConversation(userId1: string, userId2: string, activeUserId: string): void {
-    const conversationId = this.getConversationId(userId1, userId2);
-    const activeUsers = this.activeConversations.get(conversationId);
-    
-    if (activeUsers) {
-      activeUsers.delete(activeUserId);
-      
-      // Clear conversation immediately when user leaves
-      this.clearConversation(userId1, userId2);
-      
-      // Clean up tracking if no users active
-      if (activeUsers.size === 0) {
-        this.activeConversations.delete(conversationId);
-      }
-    }
+  async updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean> {
+    const result = await db.update(users).set(credentials).where(eq(users.id, userId));
+    return result.rowCount! > 0;
   }
 
-  private getConversationId(userId1: string, userId2: string): string {
-    return [userId1, userId2].sort().join('-');
-  }
-
-  async getConversationMessages(userId1: string, userId2: string): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(message => 
-        (message.userId === userId1 && message.recipientId === userId2) ||
-        (message.userId === userId2 && message.recipientId === userId1)
-      )
-      .sort((a, b) => a.timestamp!.getTime() - b.timestamp!.getTime());
-  }
-
-  async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
-    const userMessages = Array.from(this.messages.values())
-      .filter(message => message.userId === userId || message.recipientId === userId);
-    
-    const conversationMap = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
-    
-    // Add conversations with messages
-    for (const message of userMessages) {
-      const otherUserId = message.userId === userId ? message.recipientId : message.userId;
-      const otherUser = this.users.get(otherUserId);
-      
-      if (otherUser) {
-        const existing = conversationMap.get(otherUserId);
-        const isUnread = message.recipientId === userId; // Messages sent TO current user are potentially unread
-        
-        conversationMap.set(otherUserId, {
-          userId: otherUserId,
-          username: otherUser.username,
-          lastMessage: !existing || (message.timestamp! > existing.lastMessage?.timestamp!) ? message : existing.lastMessage,
-          unreadCount: (existing?.unreadCount || 0) + (isUnread ? 1 : 0)
-        });
-      }
-    }
-    
-    // Add saved conversations without messages
-    const savedConversations = Array.from(this.savedConversations.values())
-      .filter(saved => saved.userId === userId);
-    
-    savedConversations.forEach(saved => {
-      if (!conversationMap.has(saved.otherUserId)) {
-        const otherUser = this.users.get(saved.otherUserId);
-        if (otherUser) {
-          conversationMap.set(saved.otherUserId, {
-            userId: saved.otherUserId,
-            username: otherUser.username,
-            lastMessage: undefined,
-            unreadCount: 0
-          });
-        }
-      }
-    });
-    
-    return Array.from(conversationMap.values())
-      .sort((a, b) => {
-        const aTime = a.lastMessage?.timestamp?.getTime() || 0;
-        const bTime = b.lastMessage?.timestamp?.getTime() || 0;
-        return bTime - aTime;
-      });
-  }
-
-  async saveConversation(userId: string, otherUserId: string): Promise<void> {
-    // Check if already saved (both directions)
-    const existingForward = Array.from(this.savedConversations.values())
-      .find(saved => saved.userId === userId && saved.otherUserId === otherUserId);
-    const existingReverse = Array.from(this.savedConversations.values())
-      .find(saved => saved.userId === otherUserId && saved.otherUserId === userId);
-    
-    if (!existingForward) {
-      const savedConversation: SavedConversation = {
-        id: randomUUID(),
-        userId,
-        otherUserId,
-        createdAt: new Date(),
-        sessionKey: null,
-        isVerified: false
-      };
-      this.savedConversations.set(savedConversation.id, savedConversation);
-    }
-    
-    if (!existingReverse) {
-      const savedConversationReverse: SavedConversation = {
-        id: randomUUID(),
-        userId: otherUserId,
-        otherUserId: userId,
-        createdAt: new Date(),
-        sessionKey: null,
-        isVerified: false
-      };
-      this.savedConversations.set(savedConversationReverse.id, savedConversationReverse);
-    }
-  }
-
-  async removeSavedConversation(userId: string, otherUserId: string): Promise<void> {
-    // Remove saved conversation (both directions)
-    const toRemove = Array.from(this.savedConversations.entries())
-      .filter(([_, saved]) => 
-        (saved.userId === userId && saved.otherUserId === otherUserId) ||
-        (saved.userId === otherUserId && saved.otherUserId === userId)
-      );
-    
-    toRemove.forEach(([id, _]) => {
-      this.savedConversations.delete(id);
-    });
-  }
-
-  async getAllMessages(): Promise<Message[]> {
-    return Array.from(this.messages.values()).sort((a, b) => 
-      a.timestamp!.getTime() - b.timestamp!.getTime()
-    );
-  }
-
-  async getMessagesByUser(userId: string): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(message => message.userId === userId)
-      .sort((a, b) => a.timestamp!.getTime() - b.timestamp!.getTime());
-  }
-
-  async editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined> {
-    const message = this.messages.get(messageId);
-    if (message) {
-      message.content = content;
-      message.editedBy = editedBy;
-      message.editedAt = new Date();
-      this.messages.set(messageId, message);
-      return message;
-    }
-    return undefined;
-  }
-
-  async deleteMessage(messageId: string): Promise<boolean> {
-    return this.messages.delete(messageId);
-  }
-
-  async createInvitation(email: string, invitedBy: string): Promise<Invitation> {
-    const id = randomUUID();
-    const invitation: Invitation = {
-      id,
-      email,
-      invitedBy,
-      used: false,
-      createdAt: new Date(),
-    };
-    this.invitations.set(id, invitation);
-    return invitation;
-  }
-
-  async getInvitation(email: string): Promise<Invitation | undefined> {
-    return Array.from(this.invitations.values()).find(
-      (invitation) => invitation.email === email && !invitation.used
-    );
-  }
-
-  async markInvitationUsed(email: string): Promise<void> {
-    const invitation = await this.getInvitation(email);
-    if (invitation) {
-      invitation.used = true;
-      this.invitations.set(invitation.id, invitation);
-    }
-  }
-
-  private generateRandomIP(): string {
-    return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-  }
-
-  // Presence management methods
+  // Presence management (in-memory for real-time performance)
   async setUserOnline(userId: string): Promise<void> {
     this.onlineUsers.add(userId);
   }
@@ -498,24 +202,15 @@ export class MemStorage implements IStorage {
   }
 
   getUsersInChat(userId1: string, userId2: string): string[] {
-    const conversationId = this.getConversationId(userId1, userId2);
-    const activeUsers = this.activeConversations.get(conversationId);
-    return activeUsers ? Array.from(activeUsers) : [];
+    const conversationId = [userId1, userId2].sort().join('-');
+    return Array.from(this.activeConversations.get(conversationId) || []);
   }
 
   getUserPresenceStatus(userId: string, currentUserId: string, currentChatUserId?: string): 'online' | 'offline' | 'in-your-chat' {
-    if (!this.isUserOnline(userId)) {
-      return 'offline';
+    if (!this.isUserOnline(userId)) return 'offline';
+    if (currentChatUserId && this.getUsersInChat(currentUserId, currentChatUserId).includes(userId)) {
+      return 'in-your-chat';
     }
-    
-    // Check if user is in the same chat as current user
-    if (currentChatUserId && currentChatUserId === userId) {
-      const usersInChat = this.getUsersInChat(currentUserId, userId);
-      if (usersInChat.includes(userId) && usersInChat.includes(currentUserId)) {
-        return 'in-your-chat';
-      }
-    }
-    
     return 'online';
   }
 
@@ -523,55 +218,122 @@ export class MemStorage implements IStorage {
     return Array.from(this.onlineUsers);
   }
 
-  async updateUsername(userId: string, username: string): Promise<boolean> {
-    const user = this.users.get(userId);
+  // Message management
+  async createMessage(messageData: { content: string; userId: string; recipientId: string; username: string }): Promise<Message> {
+    const [message] = await db.insert(messages).values({
+      ...messageData,
+      isEncrypted: true,
+    }).returning();
+
+    // Update message count
+    const user = await this.getUser(messageData.userId);
     if (user) {
-      // Completely replace the old username with the new one
-      const oldUsername = user.username;
-      user.username = username;
-      this.users.set(userId, user);
-      
-      console.log(`Username updated: ${oldUsername} → ${username} for user ${userId}`);
-      return true;
+      const newCount = (parseInt(user.messageCount || "0") + 1).toString();
+      await db.update(users).set({ messageCount: newCount }).where(eq(users.id, messageData.userId));
     }
-    return false;
+
+    return message;
   }
 
-  async updateUserAvatar(userId: string, avatar: string): Promise<boolean> {
-    const user = this.users.get(userId);
-    if (user) {
-      // Completely replace the old avatar with the new one
-      const oldAvatar = user.avatar;
-      user.avatar = avatar;
-      this.users.set(userId, user);
-      
-      console.log(`Avatar updated for user ${userId}. Old avatar ${oldAvatar ? 'removed' : 'was null'}, new avatar set.`);
-      return true;
-    }
-    return false;
+  async getAllMessages(): Promise<Message[]> {
+    return await db.select().from(messages).orderBy(desc(messages.timestamp));
   }
 
-  async updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean> {
-    const user = this.users.get(userId);
-    if (user && !user.isAdmin) {
-      if (credentials.username) {
-        // Check if username already exists
-        const existingUser = Array.from(this.users.values()).find(u => u.username === credentials.username && u.id !== userId);
-        if (existingUser) {
-          return false; // Username already taken
-        }
-        user.username = credentials.username;
+  async getMessagesByUser(userId: string): Promise<Message[]> {
+    return await db.select().from(messages).where(eq(messages.userId, userId));
+  }
+
+  async getConversationMessages(userId1: string, userId2: string): Promise<Message[]> {
+    return await db.select().from(messages).where(
+      or(
+        and(eq(messages.userId, userId1), eq(messages.recipientId, userId2)),
+        and(eq(messages.userId, userId2), eq(messages.recipientId, userId1))
+      )
+    ).orderBy(desc(messages.timestamp));
+  }
+
+  async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
+    const userMessages = await db.select().from(messages).where(
+      or(eq(messages.userId, userId), eq(messages.recipientId, userId))
+    ).orderBy(desc(messages.timestamp));
+
+    const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
+
+    for (const message of userMessages) {
+      const otherUserId = message.userId === userId ? message.recipientId : message.userId;
+      const otherUsername = message.userId === userId ? 
+        (await this.getUser(message.recipientId))?.username || "Unknown" :
+        message.username;
+
+      if (!conversations.has(otherUserId)) {
+        conversations.set(otherUserId, {
+          userId: otherUserId,
+          username: otherUsername,
+          lastMessage: message,
+          unreadCount: 0
+        });
       }
-      
-      if (credentials.password) {
-        user.password = credentials.password;
-      }
-      
-      this.users.set(userId, user);
-      return true;
     }
-    return false;
+
+    return Array.from(conversations.values());
+  }
+
+  async clearConversation(userId1: string, userId2: string): Promise<void> {
+    await db.delete(messages).where(
+      or(
+        and(eq(messages.userId, userId1), eq(messages.recipientId, userId2)),
+        and(eq(messages.userId, userId2), eq(messages.recipientId, userId1))
+      )
+    );
+  }
+
+  async saveConversation(userId: string, otherUserId: string): Promise<void> {
+    await db.insert(savedConversations).values({
+      userId,
+      otherUserId,
+    });
+  }
+
+  async removeSavedConversation(userId: string, otherUserId: string): Promise<void> {
+    await db.delete(savedConversations).where(
+      and(eq(savedConversations.userId, userId), eq(savedConversations.otherUserId, otherUserId))
+    );
+  }
+
+  async editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined> {
+    const [message] = await db.update(messages).set({
+      content,
+      editedBy,
+      editedAt: new Date(),
+    }).where(eq(messages.id, messageId)).returning();
+
+    return message || undefined;
+  }
+
+  async deleteMessage(messageId: string): Promise<boolean> {
+    const result = await db.delete(messages).where(eq(messages.id, messageId));
+    return result.rowCount! > 0;
+  }
+
+  // Invitation management
+  async createInvitation(email: string, invitedBy: string): Promise<Invitation> {
+    const [invitation] = await db.insert(invitations).values({
+      email,
+      invitedBy,
+      used: false,
+    }).returning();
+
+    return invitation;
+  }
+
+  async getInvitation(email: string): Promise<Invitation | undefined> {
+    const [invitation] = await db.select().from(invitations).where(eq(invitations.email, email));
+    return invitation || undefined;
+  }
+
+  async markInvitationUsed(email: string): Promise<void> {
+    await db.update(invitations).set({ used: true }).where(eq(invitations.email, email));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

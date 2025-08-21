@@ -32,10 +32,11 @@ Language: Italian (primary communication)
 - **Message Encryption**: All messages marked as encrypted by default
 
 ## Data Storage
-- **Database**: PostgreSQL with Neon serverless connection
+- **Database**: PostgreSQL with Neon serverless connection for persistent data storage
 - **ORM**: Drizzle ORM with migrations managed through drizzle-kit
-- **Schema**: Three main entities - users, messages, and invitations with proper foreign key relationships
-- **Development Storage**: In-memory storage implementation for development/testing
+- **Schema**: Complete entities - users, messages, invitations, savedConversations, sharedFiles, cryptoSessions with proper foreign key relationships
+- **Storage Implementation**: DatabaseStorage class replaces MemStorage for persistent user and message data
+- **Migration**: All user creation, deletion, and message operations now persist across server restarts
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging
