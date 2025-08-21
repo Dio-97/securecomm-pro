@@ -302,7 +302,7 @@ export default function Chat({
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 chat-background ${theme === 'dark' ? 'dark' : ''}`}>
         {messages.map((message) => (
           <MessageBubble
             key={message.id}
