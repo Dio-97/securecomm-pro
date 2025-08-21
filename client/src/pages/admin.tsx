@@ -369,53 +369,47 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                         <Eye className="w-3 h-3 mr-1" />
                         View
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleAdmin(user);
-                        }}
-                        className={`text-xs bg-yellow-500 hover:bg-yellow-600 text-white ${
-                          user.username === "admin23" ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
-                        title={
-                          user.username === "admin23" 
-                            ? "Admin principale protetto" 
-                            : user.isAdmin 
-                              ? "Rimuovi status admin" 
-                              : "Promuovi ad admin"
-                        }
-                        disabled={user.username === "admin23"}
-                      >
-                        <Crown className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditCredentials(user);
-                        }}
-                        className={`text-xs ${user.username === "admin23" ? "opacity-50 cursor-not-allowed" : ""}`}
-                        title={user.username === "admin23" ? "Admin principale protetto" : "Modifica credenziali"}
-                        disabled={user.username === "admin23"}
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteUser(user.id, user.username);
-                        }}
-                        className={`text-xs ${user.username === "admin23" ? "opacity-50 cursor-not-allowed" : ""}`}
-                        disabled={deleteUserMutation.isPending || user.username === "admin23"}
-                        title={user.username === "admin23" ? "Admin principale protetto" : "Elimina utente"}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      {user.username !== "admin23" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleAdmin(user);
+                            }}
+                            className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white"
+                            title={user.isAdmin ? "Rimuovi status admin" : "Promuovi ad admin"}
+                          >
+                            <Crown className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCredentials(user);
+                            }}
+                            className="text-xs"
+                            title="Modifica credenziali"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteUser(user.id, user.username);
+                            }}
+                            className="text-xs"
+                            disabled={deleteUserMutation.isPending}
+                            title="Elimina utente"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
