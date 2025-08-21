@@ -1001,56 +1001,6 @@ export default function Conversations({ user, conversations, onSelectConversatio
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Avatar className="w-12 h-12 bg-blue-500">
-                          <AvatarFallback className="text-white font-semibold">
-                            {conversation.username.split('.').map(n => n[0].toUpperCase()).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        {getUserPresenceStatus && (
-                          <div className="absolute -bottom-1 -right-1">
-                            <PresenceIndicator 
-                              status={getUserPresenceStatus(conversation.userId)} 
-                              size="md"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-card-foreground truncate">
-                            {conversation.username.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ')}
-                          </h4>
-                          <div className="flex items-center space-x-2">
-                            {conversation.lastMessage && (
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(conversation.lastMessage.timestamp!), "HH:mm")}
-                              </span>
-                            )}
-                            {conversation.unreadCount > 0 && (
-                              <Badge variant="destructive" className="text-xs">
-                                {conversation.unreadCount}
-                              </Badge>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
-                              onClick={(e) => handleRemoveConversation(conversation.userId, e)}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">@{conversation.username}</p>
-                        {conversation.lastMessage && (
-                          <p className="text-sm text-muted-foreground truncate mt-1">
-                            {conversation.lastMessage.content}
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
