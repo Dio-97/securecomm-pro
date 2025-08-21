@@ -333,7 +333,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   };
 
   const { data: searchResults = [], isLoading: searchLoading } = useQuery<SearchUser[]>({
-    queryKey: ["/api/users/search", searchQuery],
+    queryKey: [`/api/users/search/${searchQuery}`],
     enabled: searchQuery.length >= 1,
   });
 
