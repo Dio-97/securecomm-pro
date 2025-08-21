@@ -177,6 +177,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.saveConversation(userId, otherUserId);
       console.log('✅ Conversazione salvata con successo nel database');
+      
+      // AGGIORNA IMMEDIATAMENTE LA CACHE PER L'UTENTE
+      await updateUserConversationsCache(userId);
+      
       res.json({ success: true });
     } catch (error) {
       console.error('❌ Errore salvataggio conversazione:', error);
@@ -760,6 +764,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // WebSocket connection handling
+  // Cache delle conversazioni per ogni utente  
+  const userConversationsCache = new Map<string, Array<{ userId: string; username: string; lastMessage?: any; unreadCount: number }>>();
+
+  // Aggiorna la cache delle conversazioni per un utente specifico
+  const updateUserConversationsCache = async (userId: string) => {
+    try {
+      console.log('🔄 Aggiornamento cache conversazioni per utente:', userId);
+      const conversations = await storage.getConversations(userId);
+      userConversationsCache.set(userId, conversations);
+      console.log('✅ Cache conversazioni aggiornata:', conversations.length, 'conversazioni');
+      
+      // Invia l'aggiornamento via WebSocket se l'utente è connesso
+      const userClient = connectedClients.get(userId);
+      if (userClient && userClient.readyState === WebSocket.OPEN) {
+        userClient.send(JSON.stringify({
+          type: 'conversations_updated',
+          conversations: conversations
+        }));
+        console.log('📡 Lista conversazioni inviata via WebSocket');
+      }
+    } catch (error) {
+      console.error('❌ Errore aggiornamento cache conversazioni:', error);
+    }
+  };
+
   // Send presence updates to all clients
   const broadcastPresenceUpdate = (userId: string, status: 'online' | 'offline') => {
     connectedClients.forEach((client) => {
@@ -815,17 +844,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } 
               }));
               
-              // Send user's personal conversations only - CON LOG DETTAGLIATO
-              const personalConversations = await storage.getConversations(user.id);
-              console.log('📋 Conversazioni trovate per utente', user.username, ':', personalConversations.length);
-              if (personalConversations.length > 0) {
-                console.log('📝 Lista conversazioni:', personalConversations.map(c => c.username));
-              }
-              
-              ws.send(JSON.stringify({ 
-                type: 'conversations_list', 
-                conversations: personalConversations 
-              }));
+              // Aggiorna la cache e invia le conversazioni
+              await updateUserConversationsCache(user.id);
               
               // Broadcast user presence update
               broadcastPresenceUpdate(user.id, 'online');
@@ -877,12 +897,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log('✅ INVIO ISTANTANEO al destinatario');
                 recipientClient.send(JSON.stringify(messageData));
                 
-                // Aggiorna anche la lista conversazioni del destinatario
-                const recipientConversations = await storage.getConversations(message.recipientId);
-                recipientClient.send(JSON.stringify({
-                  type: 'conversations_updated',
-                  conversations: recipientConversations
-                }));
+                // Aggiorna cache conversazioni del destinatario
+                await updateUserConversationsCache(message.recipientId);
               } else {
                 console.log('❌ DESTINATARIO NON CONNESSO');
               }
@@ -892,12 +908,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log('✅ CONFERMA ISTANTANEA al mittente');
                 senderClient.send(JSON.stringify(messageData));
                 
-                // Aggiorna anche la lista conversazioni del mittente
-                const senderConversations = await storage.getConversations(ws.userId);
-                senderClient.send(JSON.stringify({
-                  type: 'conversations_updated',
-                  conversations: senderConversations
-                }));
+                // Aggiorna cache conversazioni del mittente  
+                await updateUserConversationsCache(ws.userId);
               } else {
                 console.log('❌ MITTENTE NON CONNESSO');
               }

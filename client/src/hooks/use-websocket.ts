@@ -100,11 +100,6 @@ export function useWebSocket() {
           setConversations(message.conversations);
           break;
           
-        case 'conversations_updated':
-          console.log('📄 Lista conversazioni aggiornata:', message.conversations.length);
-          setConversations(message.conversations);
-          break;
-          
         case 'message_edited':
           setMessages(prev => prev.map(msg => 
             msg.id === message.message.id ? message.message : msg

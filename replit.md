@@ -22,6 +22,7 @@ Auto-save conversations: All chat conversations opened through search are automa
 - **WebSocket**: Real-time messaging using the `ws` library for bidirectional communication
 - **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
 - **Session Storage**: PostgreSQL-backed sessions using connect-pg-simple
+- **Conversation Cache**: Server-side caching system for all user conversations with automatic WebSocket updates
 
 ## Authentication & Security
 - **Two-Factor Authentication**: Required 6-digit code validation for all user logins
@@ -38,6 +39,8 @@ Auto-save conversations: All chat conversations opened through search are automa
 - **Schema**: Complete entities - users, messages, invitations, savedConversations, sharedFiles, cryptoSessions with proper foreign key relationships
 - **Storage Implementation**: DatabaseStorage class replaces MemStorage for persistent user and message data
 - **Migration**: All user creation, deletion, and message operations now persist across server restarts
+- **Auto-Save Conversations**: All chats opened through search are automatically saved to savedConversations table for all users (August 21, 2025)
+- **Conversation Caching**: Server maintains real-time cache of user conversations updated via WebSocket on saves and messages
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging
