@@ -256,14 +256,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId1, userId2 } = req.params;
       const { userId } = req.body;
       
-      console.log(`🔄 Richiesta cancellazione messaggi per utente ${userId} dalla chat tra ${userId1} e ${userId2}`);
+      console.log(`🔄 ENDPOINT /clear CHIAMATO - Richiesta cancellazione messaggi per utente ${userId} dalla chat tra ${userId1} e ${userId2}`);
+      
+      const otherUserId = userId === userId1 ? userId2 : userId1;
+      console.log(`🎯 Identificato otherUserId: ${otherUserId} per utente ${userId}`);
       
       // Cancella i messaggi per questo utente specifico
-      await storage.clearUserMessages(userId, userId === userId1 ? userId2 : userId1);
+      console.log(`🧹 Chiamata storage.clearUserMessages(${userId}, ${otherUserId})`);
+      await storage.clearUserMessages(userId, otherUserId);
+      console.log(`✅ storage.clearUserMessages completato con successo`);
       
       res.json({ success: true });
     } catch (error) {
-      console.error('Error clearing conversation messages:', error);
+      console.error('❌ Error clearing conversation messages:', error);
       res.status(500).json({ message: "Failed to clear conversation messages" });
     }
   });
