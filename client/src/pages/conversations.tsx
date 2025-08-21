@@ -563,7 +563,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   };
 
   return (
-    <div className={`min-h-screen flex flex-col messaging-background ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`min-h-screen flex flex-col conversations-background ${theme === 'dark' ? 'dark' : ''}`}>
       {/* God Mode Banner */}
       {isGodMode && (
         <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-between">

@@ -53,7 +53,7 @@ Search restriction: Users cannot search for themselves in user search - applies 
 - **Conversation Reordering**: Fixed automatic conversation reordering by timestamp - conversations now move to top when messages are sent, regardless of cleared status (August 21, 2025)
 - **Clean UI**: Removed message previews from conversation list for cleaner, more secure interface (August 21, 2025)
 - **WhatsApp-style Unread Counter**: Added red circular badge with white text showing unread message count, positioned on the right side of conversations (August 21, 2025)
-- **Custom Gaming Background**: Applied custom gaming-themed background image to chat messages area with dark overlay for improved readability (August 21, 2025)
+- **Custom Gaming Background**: Applied custom gaming-themed background image to chat messages area and conversations page with repeating pattern, dark overlay for readability, while preserving admin dashboard original appearance (August 21, 2025)
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging
