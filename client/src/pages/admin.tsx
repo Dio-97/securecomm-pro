@@ -248,7 +248,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700"
               >
                 <UserIcon className="w-4 h-4" />
-                <span>Crea Utente Random</span>
+                <span>Crea Utente</span>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
