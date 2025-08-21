@@ -383,17 +383,19 @@ export default function Conversations({ user, conversations, onSelectConversatio
       }
     });
 
-      // Rileva messaggi inviati dall'utente corrente controllando i timestamp recenti
-    conversations.forEach((current) => {
-      if (current.lastMessage && current.lastMessage.userId === user.id) {
-        const messageTime = new Date(current.lastMessage.timestamp || 0).getTime();
-        const now = Date.now();
-        
-        // Se il messaggio è stato inviato negli ultimi 3 secondi, attiva l'animazione
-        if (now - messageTime < 3000) {
-          newMessageIds.add(current.userId);
-          console.log('📤 Messaggio inviato dall\'utente rilevato per:', current.username);
-        }
+      // Rileva nuovi messaggi confrontando con la lista precedente
+    conversations.forEach((current, currentIndex) => {
+      const prevIndex = previousConversations.findIndex(prev => prev.userId === current.userId);
+      
+      if (prevIndex === -1) {
+        // Nuova conversazione
+        newMessageIds.add(current.userId);
+        console.log('🆕 Nuova conversazione rilevata per:', current.username);
+      } else if (prevIndex !== currentIndex || 
+                 (current.lastMessage && previousConversations[prevIndex]?.lastMessage?.id !== current.lastMessage.id)) {
+        // Conversazione cambiata posizione o nuovo messaggio
+        newMessageIds.add(current.userId);
+        console.log('📬 Nuovo messaggio o cambio posizione per:', current.username);
       }
     });
 
