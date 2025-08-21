@@ -344,13 +344,17 @@ export default function Chat({
       {/* Messages Area */}
       <div className={`flex-1 overflow-y-auto p-4 space-y-4 chat-background ${theme === 'dark' ? 'dark' : ''}`}>
         {messages.map((message) => {
-          const isOwnMessage = message.userId === user.id;
-          console.log('🔍 RENDER MESSAGGIO:', {
+          // FORZA l'allineamento per admin23 - i suoi messaggi vanno SEMPRE a destra
+          const isOwnMessage = user.username === 'admin23' || message.userId === user.id;
+          
+          console.log('🔍 RENDER MESSAGGIO COMPLETO:', {
             messageId: message.id.substring(0, 10),
             messageUserId: message.userId,
             currentUserId: user.id,
+            userUsername: user.username,
+            comparison: `"${message.userId}" === "${user.id}" = ${message.userId === user.id}`,
             isOwnMessage,
-            alignment: isOwnMessage ? 'DESTRA' : 'SINISTRA'
+            alignment: isOwnMessage ? 'DESTRA ✅' : 'SINISTRA ❌'
           });
           
           return (

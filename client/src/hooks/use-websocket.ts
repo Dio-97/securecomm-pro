@@ -186,6 +186,8 @@ export function useWebSocket() {
       console.log('📱 MESSAGGIO LOCALE CREATO:', {
         messageUserId: immediateMessage.userId,
         currentUserId: user?.id,
+        userUsername: user?.username,
+        stringComparison: `"${immediateMessage.userId}" === "${user?.id}" = ${immediateMessage.userId === user?.id}`,
         willBeOnRight: immediateMessage.userId === user?.id,
         MATCH: immediateMessage.userId === user?.id ? '✅ DESTRA' : '❌ SINISTRA'
       });
