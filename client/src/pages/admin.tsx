@@ -25,17 +25,23 @@ interface AdminProps {
   onLogout: () => void;
   onViewUser: (username: string) => void;
   onMonitorSessions: () => void;
+  currentUser?: { username: string; id: string };
 }
 
-export default function Admin({ onLogout, onViewUser, onMonitorSessions }: AdminProps) {
+export default function Admin({ onLogout, onViewUser, onMonitorSessions, currentUser }: AdminProps) {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   
-  const { data: users = [], isLoading } = useQuery<AdminUser[]>({
+  const { data: allUsers = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
   });
+
+  // Filtra gli utenti per escludere l'utente corrente
+  const users = allUsers.filter(user => 
+    currentUser ? user.username !== currentUser.username : true
+  );
 
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();

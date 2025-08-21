@@ -181,6 +181,7 @@ function AppContent() {
           onLogout={handleLogout}
           onViewUser={handleViewUser}
           onMonitorSessions={() => setCurrentScreen("monitor-sessions")}
+          currentUser={currentUser ? { username: currentUser.username, id: currentUser.id } : undefined}
         />
       )}
       
