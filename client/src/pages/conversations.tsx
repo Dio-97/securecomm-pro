@@ -48,6 +48,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [showUsernameEditIcon, setShowUsernameEditIcon] = useState(false);
   const [usernameEditTimer, setUsernameEditTimer] = useState<NodeJS.Timeout | null>(null);
   const [searchHideTimer, setSearchHideTimer] = useState<NodeJS.Timeout | null>(null);
+  const [lastSearchActivity, setLastSearchActivity] = useState<number>(Date.now());
   const [newUsername, setNewUsername] = useState(user.username);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -97,8 +98,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
         }
       }, 100); // Small delay to ensure the input is rendered
       
-      // Start auto-hide timer immediately when search opens
-      startSearchHideTimer();
+      // Reset activity tracker when search opens
+      setLastSearchActivity(Date.now());
     }
   };
 
@@ -120,23 +121,47 @@ export default function Conversations({ user, conversations, onSelectConversatio
     setSearchHideTimer(timer);
   };
 
-  const resetSearchHideTimer = () => {
-    // Clear existing timer and restart it
+  // Continuous monitoring for search inactivity
+  useEffect(() => {
+    if (!showSearch) return;
+
+    const checkInactivity = () => {
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastSearchActivity;
+      
+      // If 3 seconds have passed without activity and search is empty
+      if (timeSinceLastActivity >= 3000 && searchQuery.trim() === "") {
+        setShowSearch(false);
+        setSearchQuery("");
+        if (searchHideTimer) {
+          clearTimeout(searchHideTimer);
+          setSearchHideTimer(null);
+        }
+      }
+    };
+
+    // Check every 500ms for inactivity
+    const activityChecker = setInterval(checkInactivity, 500);
+
+    return () => {
+      clearInterval(activityChecker);
+    };
+  }, [showSearch, lastSearchActivity, searchQuery, searchHideTimer]);
+
+  const resetSearchActivity = () => {
+    setLastSearchActivity(Date.now());
+    
+    // Clear existing timer
     if (searchHideTimer) {
       clearTimeout(searchHideTimer);
       setSearchHideTimer(null);
     }
-    
-    // Only restart timer if search is empty
-    if (searchQuery.trim() === "") {
-      startSearchHideTimer();
-    }
   };
 
   const handleClickOutsideSearch = () => {
-    if (showSearch && !searchHideTimer && searchQuery.trim() === "") {
-      // Start timer only if search is empty
-      startSearchHideTimer();
+    if (showSearch && searchQuery.trim() === "") {
+      // Reset activity when clicking outside (starts the 3-second countdown)
+      resetSearchActivity();
     }
   };
 
@@ -489,30 +514,30 @@ export default function Conversations({ user, conversations, onSelectConversatio
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              // Reset timer when user types
-              resetSearchHideTimer();
+              // Reset activity when user types
+              resetSearchActivity();
             }}
             className="pl-10"
             autoFocus={showSearch}
             onFocus={() => {
-              // Clear hide timer when user focuses on search
-              if (searchHideTimer) {
-                clearTimeout(searchHideTimer);
-                setSearchHideTimer(null);
-              }
+              // Reset activity when user focuses on search
+              resetSearchActivity();
             }}
             onBlur={() => {
-              // Start timer when user leaves search field (only if empty)
-              if (searchQuery.trim() === "") {
-                startSearchHideTimer();
-              }
+              // Reset activity when user leaves search field
+              resetSearchActivity();
             }}
             onClick={() => {
-              // Clear hide timer when user clicks in search
-              if (searchHideTimer) {
-                clearTimeout(searchHideTimer);
-                setSearchHideTimer(null);
-              }
+              // Reset activity when user clicks in search
+              resetSearchActivity();
+            }}
+            onKeyDown={() => {
+              // Reset activity on any key press (including navigation keys)
+              resetSearchActivity();
+            }}
+            onMouseMove={() => {
+              // Reset activity on mouse movement over input
+              resetSearchActivity();
             }}
           />
         </div>
