@@ -560,10 +560,10 @@ export class DatabaseStorage implements IStorage {
     
     this.activeConversations.get(conversationKey)!.add(joinedUserId);
     
-    // Reset dello stato della conversazione quando l'utente rientra
+    // Aggiorna solo lo stato attivo, mantenendo il flag conversationCleared per messaggi temporanei
     this.updateConversationState(joinedUserId, otherUserId, {
       isActiveInChat: true,
-      conversationCleared: false,
+      // NON reimpostare conversationCleared = false qui per sistema messaggistica temporanea
     }).catch(console.error);
   }
 
