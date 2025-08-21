@@ -711,10 +711,6 @@ export default function Conversations({ user, conversations, onSelectConversatio
             Cambia Server
           </Button>
         </div>
-        
-        <div className="text-xs text-muted-foreground">
-          VPN: {user.vpnCountry} • DNS Sicuro: Attivo • QR: Disponibile
-        </div>
       </div>
 
       {/* Conversations List */}
