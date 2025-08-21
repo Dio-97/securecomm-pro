@@ -187,19 +187,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search users by username
+  // Search users by username - Ricerca universale per tutti gli utenti
   app.get("/api/users/search/:query", async (req, res) => {
     try {
       const { query } = req.params;
       
       if (!query || query.length < 1) {
+        console.log(`⚠️ Query vuota ricevuta`);
         return res.json([]);
       }
       
-      // Ottieni tutti gli utenti senza filtri per la ricerca
+      // Ottieni tutti gli utenti dal database (inclusi admin, utenti normali, invitati)
       const allUsers = await storage.getAllUsers();
+      console.log(`📊 Database contiene ${allUsers.length} utenti totali per la ricerca`);
       
-      // Filtra gli utenti che corrispondono alla query (inclusi admin)
+      // Filtra gli utenti che corrispondono alla query (inclusi tutti gli utenti e admin)
       const filtered = allUsers.filter(user => 
         user.username.toLowerCase().includes(query.toLowerCase())
       ).map(user => ({
@@ -208,10 +210,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         initials: user.username.length >= 2 ? user.username.slice(0, 2).toUpperCase() : user.username.toUpperCase(),
         name: user.username.charAt(0).toUpperCase() + user.username.slice(1),
         lastActivity: user.lastActivity ? new Date(user.lastActivity).toLocaleString('it-IT') : "Mai",
-        location: user.location || "📍 Sconosciuta"
+        location: user.location || "🏢 Office",
+        isAdmin: user.isAdmin || false
       }));
       
-      console.log(`Search query: "${query}", found ${filtered.length} users:`, filtered.map(u => u.username));
+      console.log(`🔍 Search query: "${query}" → Trovati ${filtered.length}/${allUsers.length} utenti:`, filtered.map(u => `${u.username}${u.isAdmin ? ' (Admin)' : ''}`));
       
       res.json(filtered);
     } catch (error) {

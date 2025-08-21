@@ -107,7 +107,7 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async createUser(userData: InsertUser & { isInvited?: boolean; invitedBy?: string }): Promise<User> {
+  async createUser(userData: InsertUser & { isInvited?: boolean; invitedBy?: string; location?: string; isAdmin?: boolean }): Promise<User> {
     // Check if username already exists (case-insensitive)
     const existingUser = await this.getUserByUsername(userData.username);
     if (existingUser) {
@@ -127,8 +127,14 @@ export class DatabaseStorage implements IStorage {
       vpnCountry: "Italy",
       messageCount: "0",
       isVerified: false,
+      // Assicurati che sia immediatamente ricercabile
+      isAdmin: false
     }).returning();
 
+    // Log per tracciare la creazione di nuovi utenti
+    console.log(`✅ Nuovo utente creato e indicizzato per la ricerca: ${user.username} (ID: ${user.id.slice(0, 8)}...)`);
+    console.log(`📊 Stato ricerca: Username="${user.username}", Admin=${user.isAdmin}, Location="${user.location}"`);
+    
     return user;
   }
 
@@ -170,7 +176,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    const allUsers = await db.select().from(users);
+    console.log(`🔍 Ricerca utenti: Trovati ${allUsers.length} utenti totali nel database`);
+    return allUsers;
   }
 
   async updateUserActivity(userId: string, realIp?: string): Promise<void> {
