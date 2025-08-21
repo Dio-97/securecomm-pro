@@ -64,7 +64,7 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
 
   const handleUsernameSubmit = () => {
     if (!username.trim()) {
-      toast({
+      toast({ duration: 1000, 
         title: "Error",
         description: "Please enter a username",
         variant: "destructive",
@@ -76,7 +76,7 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
 
   const handleLogin = async () => {
     if (!password) {
-      toast({
+      toast({ duration: 1000, 
         title: "Error",
         description: "Please enter your password",
         variant: "destructive",
@@ -103,7 +103,7 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
       onLogin(result.user);
       onWebSocketAuth(username, password);
     } catch (error: any) {
-      toast({
+      toast({ duration: 1000, 
         title: "Authentication Failed",
         description: error.message || "Invalid credentials",
         variant: "destructive",

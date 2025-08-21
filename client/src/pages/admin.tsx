@@ -77,6 +77,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
         toast({
           title: "✅ Aggiornamento completato",
           description: `${editingField === 'username' ? 'Username' : 'Password'} aggiornato con successo`,
+          duration: 1000,
         });
         handleCancelEdit();
       } else {
@@ -84,6 +85,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
           title: "❌ Errore",
           description: editingField === 'username' ? "Username già esistente o non valido" : "Impossibile aggiornare la password",
           variant: "destructive",
+          duration: 1000,
         });
       }
     } catch (error) {
@@ -91,6 +93,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
         title: "❌ Errore di rete",
         description: "Verifica la connessione",
         variant: "destructive",
+        duration: 1000,
       });
     }
   };
@@ -112,6 +115,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
             toast({
               title: "✅ Utente eliminato",
               description: `${userName} è stato eliminato con successo`,
+              duration: 1000,
             });
             setDeletingUser(null);
             setShowDeleteConfirm(null);

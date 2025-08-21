@@ -42,17 +42,20 @@ const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
+>(({ className, variant, onOpenChange, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
       duration={1000}
+      onOpenChange={onOpenChange}
       {...props}
       onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
         // Chiudi il toast immediatamente al clic
-        if (props.onOpenChange) {
-          props.onOpenChange(false);
+        if (onOpenChange) {
+          onOpenChange(false);
         }
       }}
     />

@@ -52,12 +52,12 @@ export function VPNStatus({ user, onVPNRotate }: VPNStatusProps) {
       
       onVPNRotate(newData);
       
-      toast({
+      toast({ duration: 1000, 
         title: "VPN Rotated Successfully",
         description: `Connected to ${newData.vpnServer} in ${newData.vpnCountry}`,
       });
     } catch (error) {
-      toast({
+      toast({ duration: 1000, 
         title: "VPN Rotation Failed",
         description: "Could not rotate VPN connection",
         variant: "destructive",

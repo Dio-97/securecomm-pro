@@ -88,7 +88,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       const servers = await serversResponse.json();
       
       if (servers.length === 0) {
-        toast({
+        toast({ duration: 1000, 
           title: "Errore",
           description: "Nessun server disponibile",
           variant: "destructive"
@@ -131,7 +131,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
         
         handleVPNRotate(newUserData);
         
-        toast({
+        toast({ duration: 1000, 
           title: "Server Cambiato",
           description: `Connesso a ${randomServer.country} (${randomServer.name})`,
         });
@@ -140,7 +140,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       }
     } catch (error) {
       console.error('Error switching server:', error);
-      toast({
+      toast({ duration: 1000, 
         title: "Errore",
         description: "Impossibile cambiare server. Riprova.",
         variant: "destructive"
@@ -416,7 +416,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore",
         description: "Il file deve essere un'immagine",
         variant: "destructive"
@@ -425,7 +425,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore", 
         description: "L'immagine deve essere più piccola di 5MB",
         variant: "destructive"
@@ -472,14 +472,14 @@ export default function Conversations({ user, conversations, onSelectConversatio
       // Update user state with new avatar, completely replacing the old one
       onUserUpdate?.({ avatar: data.avatar });
       
-      toast({
+      toast({ duration: 1000, 
         title: "Successo",
         description: "Immagine profilo aggiornata",
       });
       setShowAvatarUpload(false);
       
     } catch (error) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore",
         description: "Errore durante l'upload",
         variant: "destructive"
@@ -492,7 +492,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
   const handleUsernameUpdate = async () => {
     if (!newUsername.trim() || newUsername.trim().length < 3) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore",
         description: "Il nome utente deve essere di almeno 3 caratteri",
         variant: "destructive"
@@ -514,20 +514,20 @@ export default function Conversations({ user, conversations, onSelectConversatio
         const updatedUsername = newUsername.trim();
         onUserUpdate?.({ username: updatedUsername });
         
-        toast({
+        toast({ duration: 1000, 
           title: "Successo",
           description: "Nome utente aggiornato",
         });
         setShowUsernameEdit(false);
       } else {
-        toast({
+        toast({ duration: 1000, 
           title: "Errore",
           description: data.message || "Errore durante l'aggiornamento",
           variant: "destructive"
         });
       }
     } catch (error) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore", 
         description: "Errore di connessione",
         variant: "destructive"
@@ -540,7 +540,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
     
     // Protect admin23
     if (godModeTarget === "admin23") {
-      toast({
+      toast({ duration: 1000, 
         title: "Operazione Non Consentita",
         description: "Non è possibile modificare le credenziali dell'admin principale",
         variant: "destructive",
@@ -549,7 +549,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
     }
     
     if (!newUsernameForEdit.trim() && !newPasswordForEdit.trim()) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore",
         description: "Inserisci almeno un campo da modificare",
         variant: "destructive"
@@ -570,7 +570,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       
       const data = await response.json();
       if (response.ok) {
-        toast({
+        toast({ duration: 1000, 
           title: "Successo",
           description: `Credenziali di @${godModeTarget} aggiornate`,
         });
@@ -578,14 +578,14 @@ export default function Conversations({ user, conversations, onSelectConversatio
         setNewUsernameForEdit("");
         setNewPasswordForEdit("");
       } else {
-        toast({
+        toast({ duration: 1000, 
           title: "Errore",
           description: data.message || "Errore durante l'aggiornamento",
           variant: "destructive"
         });
       }
     } catch (error) {
-      toast({
+      toast({ duration: 1000, 
         title: "Errore", 
         description: "Errore di connessione",
         variant: "destructive"
