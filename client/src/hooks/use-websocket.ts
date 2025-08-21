@@ -166,8 +166,40 @@ export function useWebSocket() {
       }));
       
       console.log('✅ Messaggio inviato al server WebSocket');
+      
+      // Aggiungi il messaggio immediatamente alla lista locale per visibilità istantanea
+      const immediateMessage = {
+        id: `temp-${Date.now()}`,
+        content,
+        userId: user?.id || '',
+        recipientId,
+        username: user?.username || '',
+        createdAt: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        isEdited: false,
+        isEncrypted: true
+      };
+      
+      setMessages(prev => [...prev, immediateMessage]);
+      console.log('📱 Messaggio aggiunto localmente per visibilità immediata');
     } else {
       console.error('❌ ERRORE - WebSocket non connesso, stato:', ws.current?.readyState);
+      
+      // Anche se il WebSocket non è connesso, mostra il messaggio localmente
+      const localMessage = {
+        id: `local-${Date.now()}`,
+        content,
+        userId: user?.id || '',
+        recipientId,
+        username: user?.username || '',
+        createdAt: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        isEdited: false,
+        isEncrypted: true
+      };
+      
+      setMessages(prev => [...prev, localMessage]);
+      console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');
     }
   };
 
