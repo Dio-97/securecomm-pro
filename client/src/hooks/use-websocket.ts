@@ -211,6 +211,11 @@ export function useWebSocket() {
       
       setMessages(prev => [...prev, immediateMessage]);
       console.log('📱 Messaggio aggiunto localmente per visibilità immediata');
+      
+      // Trigger animazione conversazione
+      if ((window as any).triggerMessageSentAnimation) {
+        (window as any).triggerMessageSentAnimation(recipientId);
+      }
     } else {
       console.error('❌ ERRORE - WebSocket non connesso, stato:', ws.current?.readyState);
       
@@ -237,6 +242,11 @@ export function useWebSocket() {
       
       setMessages(prev => [...prev, localMessage]);
       console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');
+      
+      // Trigger animazione conversazione anche offline
+      if ((window as any).triggerMessageSentAnimation) {
+        (window as any).triggerMessageSentAnimation(recipientId);
+      }
     }
   };
 

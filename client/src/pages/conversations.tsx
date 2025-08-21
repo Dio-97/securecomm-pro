@@ -28,6 +28,7 @@ interface ConversationsProps {
   isGodMode?: boolean;
   godModeTarget?: string;
   onExitGodMode?: () => void;
+  onMessageSent?: (targetUserId: string) => void;
 }
 
 interface SearchUser {
@@ -39,12 +40,13 @@ interface SearchUser {
   location: string;
 }
 
-export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved, getUserPresenceStatus, isGodMode = false, godModeTarget = "", onExitGodMode }: ConversationsProps) {
+export default function Conversations({ user, conversations, onSelectConversation, onLogout, onUserUpdate, onConversationRemoved, getUserPresenceStatus, isGodMode = false, godModeTarget = "", onExitGodMode, onMessageSent }: ConversationsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const [newMessageConversations, setNewMessageConversations] = useState<Set<string>>(new Set());
   const [previousConversations, setPreviousConversations] = useState<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>([]);
+  const [lastSentMessageConversation, setLastSentMessageConversation] = useState<string | null>(null);
 
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
@@ -355,7 +357,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
   // Rilevamento nuovi messaggi per animazioni
   useEffect(() => {
-    if (!conversations || conversations.length === 0) {
+    if (!conversations || !Array.isArray(conversations) || conversations.length === 0) {
       setPreviousConversations([]);
       return;
     }
@@ -382,6 +384,13 @@ export default function Conversations({ user, conversations, onSelectConversatio
       }
     });
 
+    // Includi anche la conversazione per cui è stato inviato un messaggio
+    if (lastSentMessageConversation) {
+      newMessageIds.add(lastSentMessageConversation);
+      console.log('📤 Messaggio inviato dall\'utente per:', lastSentMessageConversation);
+      setLastSentMessageConversation(null); // Reset dopo l'utilizzo
+    }
+
     // Aggiorna lo stato dei nuovi messaggi
     if (newMessageIds.size > 0) {
       setNewMessageConversations(newMessageIds);
@@ -394,7 +403,22 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
     // Aggiorna le conversazioni precedenti
     setPreviousConversations([...conversations]);
-  }, [conversations]);
+  }, [conversations, lastSentMessageConversation]);
+
+  // Funzione per notificare quando l'utente invia un messaggio
+  const triggerMessageSentAnimation = (targetUserId: string) => {
+    setLastSentMessageConversation(targetUserId);
+    console.log('🎯 Trigger animazione per messaggio inviato a:', targetUserId);
+  };
+
+  // Esponi la funzione al componente padre tramite useEffect
+  useEffect(() => {
+    if (onMessageSent) {
+      // Sostituisci la funzione onMessageSent con la nostra versione che attiva l'animazione
+      const originalOnMessageSent = onMessageSent;
+      (window as any).triggerMessageSentAnimation = triggerMessageSentAnimation;
+    }
+  }, [onMessageSent]);
 
   const handleStartConversation = async (userId: string, username: string) => {
     console.log('🔍 Avvio conversazione da ricerca:', username, 'ID:', userId);
@@ -903,7 +927,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             </div>
           ) : (
             <div className="space-y-2">
-              {conversations.map((conversation, index) => {
+              {Array.isArray(conversations) && conversations.map((conversation, index) => {
                 const hasNewMessage = newMessageConversations.has(conversation.userId);
                 const isFirstPosition = index === 0;
                 
