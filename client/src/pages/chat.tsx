@@ -52,9 +52,9 @@ export default function Chat({
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showChatVerificationConfirm, setShowChatVerificationConfirm] = useState(false);
 
-  // Admin23 è esente dalla verifica QR - tutte le funzioni disponibili senza verifica
-  const isAdmin23Chat = recipientUsername === "admin23" || user.username === "admin23";
-  const [isConversationVerified, setIsConversationVerified] = useState(isAdmin23Chat);
+  // Gli admin sono esenti dalla verifica QR - tutte le funzioni disponibili senza verifica
+  const isAdminChat = user.isAdmin || (recipientUsername === "admin23");
+  const [isConversationVerified, setIsConversationVerified] = useState(isAdminChat);
   const [isFirstMessage, setIsFirstMessage] = useState(messages.length === 0);
   const [isFirstFileShare, setIsFirstFileShare] = useState(true);
   const [pendingFileUpload, setPendingFileUpload] = useState<File | null>(null);
@@ -106,12 +106,12 @@ export default function Chat({
       messaggio: newMessage,
       mittente: user.username,
       destinatario: recipientUsername,
-      isAdmin23Chat
+      isAdminChat
     });
     
-    // Admin23 chat è esente dalla verifica QR - invia direttamente
-    if (isAdmin23Chat) {
-      console.log('✅ Admin23 chat - Invio diretto senza verifica QR');
+    // Admin chat è esente dalla verifica QR - invia direttamente
+    if (isAdminChat) {
+      console.log('✅ Admin chat - Invio diretto senza verifica QR');
       onSendMessage(newMessage, recipientId);
       setNewMessage("");
       setIsFirstMessage(false);
@@ -384,8 +384,8 @@ export default function Chat({
             variant="ghost" 
             size="sm"
             onClick={() => {
-              // Admin23 chat è esente dalla verifica QR - accesso diretto ai file
-              if (isAdmin23Chat || isConversationVerified) {
+              // Admin chat è esente dalla verifica QR - accesso diretto ai file
+              if (isAdminChat || isConversationVerified) {
                 setShowFileUpload(true);
               } else {
                 setQRPurpose('file');
