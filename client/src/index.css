@@ -23,7 +23,7 @@
     #080b0f 96%,
     #000000 100%
   );
-  transition: background 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.72s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .messaging-background.dark {
@@ -44,7 +44,7 @@
     #e9ecef 96%,
     #f8f9fa 100%
   );
-  transition: background 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.72s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Diagonal Grayscale Chat Background */
@@ -121,7 +121,7 @@
   --radius: 0.75rem;
   
   /* Transition variables for theme loop */
-  transition: all 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.72s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark {
@@ -162,28 +162,28 @@
   --font-mono: Menlo, monospace;
   
   /* Smooth transition for theme loop completion */
-  transition: all 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.72s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @layer base {
   * {
     @apply border-border;
-    transition: background-color 0.48s cubic-bezier(0.4, 0, 0.2, 1), 
-                color 0.48s cubic-bezier(0.4, 0, 0.2, 1), 
-                border-color 0.48s cubic-bezier(0.4, 0, 0.2, 1), 
-                box-shadow 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.72s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.72s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.72s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.72s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-family: 'Inter', sans-serif;
-    transition: background-color 0.48s cubic-bezier(0.4, 0, 0.2, 1), 
-                color 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.72s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.72s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   /* Root element theme transition */
   html {
-    transition: background-color 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.72s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
