@@ -259,32 +259,20 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                     key={user.id}
                     layout
                     initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={isDeleting ? {
-                      opacity: [1, 0.8, 0.4, 0],
-                      scale: [1, 0.8, 0.4, 0.1],
-                      y: [0, -50, -150, -300],
-                      rotateX: [0, 45, 90, 180],
-                      filter: ["blur(0px)", "blur(2px)", "blur(8px)", "blur(20px)"]
-                    } : {
+                    animate={!isDeleting ? {
                       opacity: 1,
                       scale: 1,
-                      y: 0,
-                      rotateX: 0,
-                      filter: "blur(0px)"
-                    }}
-                    transition={isDeleting ? {
-                      duration: 1,
-                      ease: [0.25, 0.46, 0.45, 0.94],
-                      times: [0, 0.3, 0.7, 1]
-                    } : {
+                      y: 0
+                    } : {}}
+                    transition={{
                       duration: 0.4,
                       delay: index * 0.1,
                       ease: "easeOut"
                     }}
                     whileHover={!isDeleting ? { scale: 1.02 } : {}}
                     whileTap={!isDeleting ? { scale: 0.98 } : {}}
+                    className={isDeleting ? "delete-animation" : ""}
                     style={{
-                      transformPerspective: "1000px",
                       pointerEvents: isDeleting ? "none" : "auto"
                     }}
                   >
