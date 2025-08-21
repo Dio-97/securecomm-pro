@@ -713,7 +713,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await storage.updateUsername(userId, username.trim());
       if (success) {
-        res.json({ success: true, message: "Username updated successfully" });
+        // Get the updated user to return fresh data
+        const updatedUser = await storage.getUser(userId);
+        res.json({ 
+          success: true, 
+          message: "Username updated successfully",
+          user: updatedUser ? {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            avatar: updatedUser.avatar
+          } : null
+        });
       } else {
         res.status(400).json({ message: "Failed to update username" });
       }
@@ -746,7 +756,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await storage.updateUserAvatar(userId, base64Avatar);
       if (success) {
-        res.json({ success: true, avatar: base64Avatar, message: "Avatar updated successfully" });
+        // Get the updated user to return fresh data
+        const updatedUser = await storage.getUser(userId);
+        res.json({ 
+          success: true, 
+          avatar: base64Avatar, 
+          message: "Avatar updated successfully",
+          user: updatedUser ? {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            avatar: updatedUser.avatar
+          } : null
+        });
       } else {
         res.status(400).json({ message: "Failed to update avatar" });
       }

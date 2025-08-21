@@ -525,8 +525,12 @@ export class MemStorage implements IStorage {
   async updateUsername(userId: string, username: string): Promise<boolean> {
     const user = this.users.get(userId);
     if (user) {
+      // Completely replace the old username with the new one
+      const oldUsername = user.username;
       user.username = username;
       this.users.set(userId, user);
+      
+      console.log(`Username updated: ${oldUsername} → ${username} for user ${userId}`);
       return true;
     }
     return false;
@@ -535,8 +539,12 @@ export class MemStorage implements IStorage {
   async updateUserAvatar(userId: string, avatar: string): Promise<boolean> {
     const user = this.users.get(userId);
     if (user) {
+      // Completely replace the old avatar with the new one
+      const oldAvatar = user.avatar;
       user.avatar = avatar;
       this.users.set(userId, user);
+      
+      console.log(`Avatar updated for user ${userId}. Old avatar ${oldAvatar ? 'removed' : 'was null'}, new avatar set.`);
       return true;
     }
     return false;

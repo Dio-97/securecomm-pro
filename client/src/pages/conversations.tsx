@@ -186,7 +186,9 @@ export default function Conversations({ user, conversations, onSelectConversatio
       const data = await response.json();
       
       if (response.ok) {
+        // Update user state with new avatar, completely replacing the old one
         onUserUpdate?.({ avatar: data.avatar });
+        
         toast({
           title: "Successo",
           description: "Immagine profilo aggiornata",
@@ -228,7 +230,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
       const data = await response.json();
       
       if (response.ok) {
-        onUserUpdate?.({ username: newUsername.trim() });
+        // Update user state with new username, completely replacing the old one
+        const updatedUsername = newUsername.trim();
+        onUserUpdate?.({ username: updatedUsername });
+        
         toast({
           title: "Successo",
           description: "Nome utente aggiornato",
