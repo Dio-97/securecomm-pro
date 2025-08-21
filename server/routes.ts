@@ -85,6 +85,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messageCount: user.messageCount,
         initials: user.username.split('.').map(n => n[0].toUpperCase()).join(''),
         name: user.username.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' '),
+        isAdmin: user.isAdmin,
+        avatar: user.avatar,
       }));
       res.json(usersWithStatus);
     } catch (error) {
@@ -621,7 +623,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error updating user credentials:", error);
-      res.status(500).json({ error: "Failed to update credentials" });
+      if (error.message.includes("already exists")) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to update credentials" });
+      }
     }
   });
 

@@ -1,7 +1,7 @@
 import { type User, type Message, type InsertUser, type Invitation, type SavedConversation, type SharedFile, type CryptoSession } from "@shared/schema";
 import { users, messages, invitations, savedConversations, sharedFiles, cryptoSessions } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
 
@@ -93,11 +93,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(eq(sql`LOWER(${users.username})`, username.toLowerCase()));
     return user || undefined;
   }
 
   async createUser(userData: InsertUser & { isInvited?: boolean; invitedBy?: string }): Promise<User> {
+    // Check if username already exists (case-insensitive)
+    const existingUser = await this.getUserByUsername(userData.username);
+    if (existingUser) {
+      throw new Error(`Username "${userData.username}" already exists`);
+    }
+    
     const realIp = this.generateRandomIP();
     const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
 
@@ -184,6 +190,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean> {
+    // Check if new username already exists (case-insensitive)
+    if (credentials.username) {
+      const existingUser = await this.getUserByUsername(credentials.username);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error(`Username "${credentials.username}" already exists`);
+      }
+    }
+    
     const result = await db.update(users).set(credentials).where(eq(users.id, userId));
     return result.rowCount! > 0;
   }
