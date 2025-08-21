@@ -52,7 +52,9 @@ export default function Chat({
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showChatVerificationConfirm, setShowChatVerificationConfirm] = useState(false);
 
-  const [isConversationVerified, setIsConversationVerified] = useState(false);
+  // Admin23 è esente dalla verifica QR - tutte le funzioni disponibili senza verifica
+  const isAdmin23Chat = recipientUsername === "admin23" || user.username === "admin23";
+  const [isConversationVerified, setIsConversationVerified] = useState(isAdmin23Chat);
   const [isFirstMessage, setIsFirstMessage] = useState(messages.length === 0);
   const [isFirstFileShare, setIsFirstFileShare] = useState(true);
   const [pendingFileUpload, setPendingFileUpload] = useState<File | null>(null);
@@ -80,6 +82,19 @@ export default function Chat({
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
+    
+    // Admin23 chat è esente dalla verifica QR - invia direttamente
+    if (isAdmin23Chat) {
+      onSendMessage(newMessage, recipientId);
+      setNewMessage("");
+      setIsFirstMessage(false);
+      
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+      return;
+    }
     
     // Check if this is the first message and conversation needs verification
     if (isFirstMessage && !isConversationVerified) {
@@ -322,13 +337,13 @@ export default function Chat({
             variant="ghost" 
             size="sm"
             onClick={() => {
-              // Check if conversation is verified before allowing file attachment
-              if (!isConversationVerified) {
+              // Admin23 chat è esente dalla verifica QR - accesso diretto ai file
+              if (isAdmin23Chat || isConversationVerified) {
+                setShowFileUpload(true);
+              } else {
                 setQRPurpose('file');
                 setQRMode('generate');
                 setShowQRModal(true);
-              } else {
-                setShowFileUpload(true);
               }
             }}
             title="Attach File"
