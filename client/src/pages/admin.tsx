@@ -140,6 +140,14 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
     setNewUsername(user.username);
     setNewPassword("");
     setShowCredentialsEdit(true);
+    
+    // Prevent auto-focus on mobile to avoid automatic keyboard opening
+    setTimeout(() => {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.blur) {
+        activeElement.blur();
+      }
+    }, 100);
   };
 
   const handleSaveCredentials = () => {
@@ -346,6 +354,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 placeholder="Inserisci nuovo username"
+                autoFocus={false}
               />
             </div>
             <div>
@@ -356,6 +365,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Lascia vuoto per non modificare"
+                autoFocus={false}
               />
             </div>
           </div>
