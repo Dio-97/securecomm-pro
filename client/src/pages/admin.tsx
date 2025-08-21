@@ -48,6 +48,8 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [inputsEnabled, setInputsEnabled] = useState(false);
+  const [showAdminToggleDialog, setShowAdminToggleDialog] = useState(false);
+  const [toggleAdminUser, setToggleAdminUser] = useState<AdminUser | null>(null);
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -197,6 +199,51 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
     setNewPassword("");
   };
 
+  const toggleAdminMutation = useMutation({
+    mutationFn: async ({ userId, makeAdmin }: { userId: string; makeAdmin: boolean }) => {
+      const response = await apiRequest("PUT", `/api/admin/toggle/${userId}`, { makeAdmin });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setShowAdminToggleDialog(false);
+      setToggleAdminUser(null);
+      toast({
+        title: "Status Admin Aggiornato",
+        description: "Lo status di amministratore è stato modificato con successo",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Errore",
+        description: "Impossibile modificare lo status admin",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleToggleAdmin = (user: AdminUser) => {
+    if (user.username === "admin23") {
+      toast({
+        title: "Operazione Non Consentita",
+        description: "Non è possibile modificare lo status dell'admin principale",
+        variant: "destructive",
+      });
+      return;
+    }
+    setToggleAdminUser(user);
+    setShowAdminToggleDialog(true);
+  };
+
+  const confirmToggleAdmin = () => {
+    if (toggleAdminUser) {
+      toggleAdminMutation.mutate({
+        userId: toggleAdminUser.id,
+        makeAdmin: !toggleAdminUser.isAdmin
+      });
+    }
+  };
+
 
 
   const getActivityStatus = (lastActivity: string) => {
@@ -283,7 +330,11 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                             <p className="text-xs text-muted-foreground">@{user.username}</p>
                           </div>
                           {user.isAdmin && (
-                            <Crown className="w-4 h-4 text-yellow-500 ml-2" />
+                            <Crown className={`w-4 h-4 ml-2 ${
+                              user.username === "admin23" 
+                                ? "text-yellow-300" // Corona oro luminosa per admin principale
+                                : "text-yellow-600" // Corona gialla più scura per altri admin
+                            }`} />
                           )}
                         </div>
                       </div>
@@ -305,7 +356,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       </div>
                     </div>
                     
-                    <div className="flex justify-between mt-4 space-x-2">
+                    <div className="flex justify-between mt-4 space-x-1">
                       <Button
                         size="sm"
                         variant="outline"
@@ -317,6 +368,27 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       >
                         <Eye className="w-3 h-3 mr-1" />
                         View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleAdmin(user);
+                        }}
+                        className={`text-xs bg-yellow-500 hover:bg-yellow-600 text-white ${
+                          user.username === "admin23" ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                        title={
+                          user.username === "admin23" 
+                            ? "Admin principale protetto" 
+                            : user.isAdmin 
+                              ? "Rimuovi status admin" 
+                              : "Promuovi ad admin"
+                        }
+                        disabled={user.username === "admin23"}
+                      >
+                        <Crown className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
@@ -426,7 +498,44 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
         </DialogContent>
       </Dialog>
 
-
+      {/* Toggle Admin Status Dialog */}
+      <Dialog open={showAdminToggleDialog} onOpenChange={setShowAdminToggleDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {toggleAdminUser?.isAdmin ? "Rimuovi" : "Aggiungi"} Status Admin - {toggleAdminUser?.username}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              {toggleAdminUser?.isAdmin ? (
+                <>Sei sicuro di voler <strong>rimuovere</strong> i privilegi di amministratore da <strong>@{toggleAdminUser?.username}</strong>?</>
+              ) : (
+                <>Sei sicuro di voler <strong>promuovere</strong> <strong>@{toggleAdminUser?.username}</strong> ad amministratore?</>
+              )}
+            </p>
+            <p className="text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950 p-3 rounded">
+              {toggleAdminUser?.isAdmin ? (
+                "⚠️ L'utente perderà l'accesso al pannello admin e tutte le funzionalità di amministrazione."
+              ) : (
+                "⚠️ Gli amministratori hanno accesso completo al sistema e possono gestire tutti gli utenti."
+              )}
+            </p>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setShowAdminToggleDialog(false)}>
+              Annulla
+            </Button>
+            <Button 
+              onClick={confirmToggleAdmin}
+              disabled={toggleAdminMutation.isPending}
+              className={toggleAdminUser?.isAdmin ? "bg-red-600 hover:bg-red-700" : "bg-yellow-600 hover:bg-yellow-700"}
+            >
+              {toggleAdminMutation.isPending ? "Aggiornando..." : toggleAdminUser?.isAdmin ? "Rimuovi Admin" : "Promuovi ad Admin"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

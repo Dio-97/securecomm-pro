@@ -631,7 +631,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Toggle admin status endpoint
+  app.put("/api/admin/toggle/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { makeAdmin } = req.body;
+      
+      // Get user to check if it's admin23
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      if (user.username === "admin23") {
+        return res.status(403).json({ error: "Cannot modify admin23 status" });
+      }
+      
+      const success = await storage.updateUserCredentials(userId, { isAdmin: makeAdmin });
+      
+      if (!success) {
+        return res.status(500).json({ error: "Failed to update admin status" });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `User ${makeAdmin ? 'promoted to' : 'demoted from'} admin successfully` 
+      });
+    } catch (error) {
+      console.error("Error toggling admin status:", error);
+      res.status(500).json({ error: "Failed to toggle admin status" });
+    }
+  });
 
   // Get user by username endpoint (for God Mode)
   app.get("/api/user/by-username/:username", async (req, res) => {
