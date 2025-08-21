@@ -38,16 +38,16 @@ export function useWebSocket() {
     }
   };
 
-  // Auto-refresh conversazioni ogni 3 secondi quando l'utente è loggato
+  // Auto-refresh conversazioni ogni 2 secondi quando l'utente è loggato
   useEffect(() => {
     if (!user?.id) return;
     
-    const interval = setInterval(() => {
-      refreshConversations();
-    }, 3000);
-    
     // Refresh immediato quando l'utente si logga
     refreshConversations();
+    
+    const interval = setInterval(() => {
+      refreshConversations();
+    }, 2000);
     
     return () => clearInterval(interval);
   }, [user?.id]);
@@ -98,6 +98,8 @@ export function useWebSocket() {
         case 'conversations_updated':
           console.log('📋 Lista conversazioni aggiornata:', message.conversations.length);
           setConversations(message.conversations);
+          // Forza anche il refresh manuale per sicurezza
+          setTimeout(() => refreshConversations(), 500);
           break;
           
         case 'message_edited':

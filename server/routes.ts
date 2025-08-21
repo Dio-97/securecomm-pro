@@ -847,6 +847,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Aggiorna la cache e invia le conversazioni
               await updateUserConversationsCache(user.id);
               
+              // Invia anche la lista conversazioni immediatamente dopo il login
+              const userConversations = await storage.getConversations(user.id);
+              console.log('📋 INVIO IMMEDIATO conversazioni dopo login:', userConversations.length);
+              ws.send(JSON.stringify({ 
+                type: 'conversations_list', 
+                conversations: userConversations 
+              }));
+              
               // Broadcast user presence update
               broadcastPresenceUpdate(user.id, 'online');
               
