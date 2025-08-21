@@ -640,11 +640,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h4 className="font-medium text-foreground mb-2">No conversations yet</h4>
-              <p className="text-sm text-muted-foreground mb-4">Start a conversation by searching for a user</p>
-              <Button onClick={() => setShowSearch(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Start Conversation
-              </Button>
+              <p className="text-sm text-muted-foreground">Start a conversation by searching for a user using the + button</p>
             </div>
           ) : (
             <div className="space-y-2">
