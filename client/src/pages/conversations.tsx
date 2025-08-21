@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, MessageCircle, Plus, Settings, LogOut, User, Lock, ShieldQuestion, X, Shield, QrCode, Upload, Edit3, Check, Camera, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -332,10 +332,26 @@ export default function Conversations({ user, conversations, onSelectConversatio
     }
   };
 
-  const { data: searchResults = [], isLoading: searchLoading } = useQuery<SearchUser[]>({
+  const { data: searchResults = [], isLoading: searchLoading, error: searchError } = useQuery<SearchUser[]>({
     queryKey: [`/api/users/search/${searchQuery}`],
     enabled: searchQuery.length >= 1,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Search state updated:', { 
+      searchQuery, 
+      searchResults: searchResults || [], 
+      searchLoading,
+      searchError,
+      enabled: searchQuery.length >= 1 
+    });
+    if (searchResults && searchResults.length > 0) {
+      console.log('Search results:', searchResults);
+    }
+  }, [searchQuery, searchResults, searchLoading, searchError]);
 
   const handleStartConversation = async (userId: string, username: string) => {
     // Always save the conversation when clicking on a user to make it persistent
@@ -761,7 +777,9 @@ export default function Conversations({ user, conversations, onSelectConversatio
             placeholder="Search users by username..."
             value={searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value);
+              const value = e.target.value;
+              console.log('Search query changed:', value);
+              setSearchQuery(value);
               // Reset activity when user types
               resetSearchActivity();
             }}
@@ -791,7 +809,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
           
           {searchQuery.length >= 1 && (
-            <div className="mt-4 space-y-2 z-[9999] relative bg-card border rounded-lg shadow-lg p-2"
+            <div className="mt-4 space-y-2 z-[9999] relative bg-card border rounded-lg shadow-lg p-2 max-h-64 overflow-y-auto"
                  style={{ 
                    position: 'absolute',
                    top: '100%',
@@ -800,37 +818,48 @@ export default function Conversations({ user, conversations, onSelectConversatio
                    zIndex: 9999
                  }}>
               {searchLoading ? (
-                <div className="text-center text-muted-foreground py-4">Searching...</div>
-              ) : searchResults.length > 0 ? (
-                searchResults.map((searchUser) => {
-                  const activity = getActivityStatus(searchUser.lastActivity);
-                  return (
-                    <Card 
-                      key={`search-${searchUser.id}`}
-                      className="cursor-pointer hover:shadow-sm transition-all"
-                      onClick={() => handleStartConversation(searchUser.id, searchUser.username)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="w-10 h-10 bg-blue-500">
-                            <AvatarFallback className="text-white font-semibold text-sm">
-                              {searchUser.initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-card-foreground">{searchUser.name}</h4>
-                            <p className="text-xs text-muted-foreground">@{searchUser.username}</p>
-                            <p className="text-xs text-muted-foreground">{searchUser.location}</p>
+                <div className="text-center text-muted-foreground py-4 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                  Cercando utenti...
+                </div>
+              ) : searchResults && searchResults.length > 0 ? (
+                <>
+                  <div className="text-xs text-muted-foreground px-2 py-1 border-b">
+                    {searchResults.length} utente{searchResults.length !== 1 ? 'i' : ''} trovato{searchResults.length !== 1 ? 'i' : ''}
+                  </div>
+                  {searchResults.map((searchUser) => {
+                    const activity = getActivityStatus(searchUser.lastActivity);
+                    return (
+                      <Card 
+                        key={`search-${searchUser.id}`}
+                        className="cursor-pointer hover:shadow-sm transition-all hover:bg-accent"
+                        onClick={() => handleStartConversation(searchUser.id, searchUser.username)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-10 h-10 bg-blue-500">
+                              <AvatarFallback className="text-white font-semibold text-sm">
+                                {searchUser.initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-card-foreground">{searchUser.name}</h4>
+                              <p className="text-xs text-muted-foreground">@{searchUser.username}</p>
+                              <p className="text-xs text-muted-foreground">{searchUser.location}</p>
+                            </div>
+                            <div className={`w-3 h-3 ${activity.color} rounded-full`}></div>
                           </div>
-                          <div className={`w-3 h-3 ${activity.color} rounded-full`}></div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              ) : (
-                <div className="text-center text-muted-foreground py-4">No users found</div>
-              )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </>
+              ) : searchQuery.length >= 1 ? (
+                <div className="text-center text-muted-foreground py-4">
+                  <div className="text-sm">Nessun utente trovato per "{searchQuery}"</div>
+                  <div className="text-xs mt-1">Prova con un altro nome utente</div>
+                </div>
+              ) : null}
             </div>
           )}
       </div>
