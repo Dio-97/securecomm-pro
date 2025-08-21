@@ -35,18 +35,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const connectedClients = new Map<string, AuthenticatedWebSocket>();
   const MAX_CONNECTIONS = 20;
 
-  // Rate limiting configuration
+  // Rate limiting disabilitato - tentativi di accesso illimitati
   const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Max 5 login attempts per IP per window
+    max: 0, // Nessun limite sui tentativi di accesso
     message: {
-      error: "Too many login attempts",
-      retryAfter: "Please try again after 15 minutes"
+      error: "Rate limiting disabled",
+      retryAfter: "No retry limit"
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting for localhost in development
-    skip: (req) => process.env.NODE_ENV === 'development' && req.ip === '127.0.0.1'
+    // Sempre saltato - rate limiting completamente disabilitato
+    skip: () => true
   });
 
   const apiLimiter = rateLimit({

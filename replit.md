@@ -37,6 +37,7 @@ Search restriction: Users cannot search for themselves in user search - applies 
 - **Role-Based Access**: Admin users have elevated privileges for user management and monitoring
 - **Password Storage**: Plain text passwords (development setup - should be hashed in production)
 - **Message Encryption**: All messages marked as encrypted by default
+- **Login Rate Limiting**: Disabled - unlimited login attempts allowed (August 21, 2025)
 
 ## Data Storage
 - **Database**: PostgreSQL with Neon serverless connection for persistent data storage
