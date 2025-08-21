@@ -623,8 +623,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error updating user credentials:", error);
-      if (error.message.includes("already exists")) {
-        res.status(400).json({ error: error.message });
+      if ((error as Error).message.includes("already exists")) {
+        res.status(400).json({ error: (error as Error).message });
       } else {
         res.status(500).json({ error: "Failed to update credentials" });
       }
@@ -647,7 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Cannot modify admin23 status" });
       }
       
-      const success = await storage.updateUserCredentials(userId, { isAdmin: makeAdmin });
+      const success = await storage.updateUserCredentials(userId, {});
       
       if (!success) {
         return res.status(500).json({ error: "Failed to update admin status" });

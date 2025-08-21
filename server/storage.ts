@@ -26,6 +26,8 @@ export interface IStorage {
   getUsersInChat(userId1: string, userId2: string): string[];
   getUserPresenceStatus(userId: string, currentUserId: string, currentChatUserId?: string): 'online' | 'offline' | 'in-your-chat';
   getAllOnlineUsers(): string[];
+  joinConversation(userId: string, otherUserId: string, joinedUserId: string): void;
+  leaveConversation(userId: string, otherUserId: string, leftUserId: string): Promise<void>;
   
   // Message management
   createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message>;
@@ -173,7 +175,7 @@ export class DatabaseStorage implements IStorage {
       maskedIp: rotationResult.maskedIp,
       vpnServer: rotationResult.vpnServer.name || "Rome-01", 
       vpnCountry: rotationResult.vpnServer.country || "Italy",
-      location: rotationResult.vpnServer.location || "🏢 Office",
+      location: "🏢 Office",
     }).where(eq(users.id, userId)).returning();
 
     return updatedUser || undefined;
@@ -347,6 +349,31 @@ export class DatabaseStorage implements IStorage {
 
   async markInvitationUsed(email: string): Promise<void> {
     await db.update(invitations).set({ used: true }).where(eq(invitations.email, email));
+  }
+
+  // Conversation management functions
+  joinConversation(userId: string, otherUserId: string, joinedUserId: string): void {
+    const conversationKey = [userId, otherUserId].sort().join('-');
+    
+    if (!this.activeConversations.has(conversationKey)) {
+      this.activeConversations.set(conversationKey, new Set());
+    }
+    
+    this.activeConversations.get(conversationKey)!.add(joinedUserId);
+  }
+
+  async leaveConversation(userId: string, otherUserId: string, leftUserId: string): Promise<void> {
+    const conversationKey = [userId, otherUserId].sort().join('-');
+    
+    if (this.activeConversations.has(conversationKey)) {
+      this.activeConversations.get(conversationKey)!.delete(leftUserId);
+      
+      // Se non ci sono più utenti attivi nella conversazione, elimina tutti i messaggi
+      if (this.activeConversations.get(conversationKey)!.size === 0) {
+        await this.clearConversation(userId, otherUserId);
+        this.activeConversations.delete(conversationKey);
+      }
+    }
   }
 }
 
