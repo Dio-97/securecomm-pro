@@ -22,6 +22,28 @@ function AppContent() {
   const [godModeTarget, setGodModeTarget] = useState<string>("");
   const [currentConversation, setCurrentConversation] = useState<{ userId: string; username: string } | null>(null);
 
+  // Handle URL changes for navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove the #
+      if (hash === 'admin' && currentUser?.isAdmin) {
+        setCurrentScreen("admin");
+      } else if (hash === 'conversations' && currentUser) {
+        setCurrentScreen("conversations");
+        // Reset God Mode when returning to conversations
+        setIsGodMode(false);
+        setGodModeTarget("");
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Check initial hash
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [currentUser]);
+
   const handleUserUpdate = (updatedData: Partial<User>) => {
     if (currentUser) {
       setCurrentUser({ ...currentUser, ...updatedData });
@@ -43,11 +65,8 @@ function AppContent() {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    if (user.isAdmin) {
-      setCurrentScreen("admin");
-    } else {
-      setCurrentScreen("conversations");
-    }
+    // Tutti gli utenti (inclusi gli admin) vanno al loro account principale
+    setCurrentScreen("conversations");
   };
 
   const handleWebSocketAuth = (username: string, password: string) => {

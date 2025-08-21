@@ -1,17 +1,11 @@
-import { useState, useEffect } from "react";
-import { Crown, Settings, LogOut, Eye, UserPlus, Ban, Trash2, Shield, Edit3, User as UserIcon } from "lucide-react";
+import { useState } from "react";
+import { Crown, Settings, LogOut, Eye, User as UserIcon, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useTheme } from "@/components/theme-provider";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import type { User } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 
 interface AdminUser {
   id: string;
@@ -31,295 +25,134 @@ interface AdminProps {
   onMonitorSessions: () => void;
 }
 
-interface CreateUserResponse {
-  user: AdminUser;
-  credentials: {
-    username: string;
-    password: string;
-  };
-}
-
 export default function Admin({ onLogout, onViewUser, onMonitorSessions }: AdminProps) {
   const { theme, toggleTheme } = useTheme();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [showCredentialsEdit, setShowCredentialsEdit] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
-  const [newUsername, setNewUsername] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [inputsEnabled, setInputsEnabled] = useState(false);
-  const [showAdminToggleDialog, setShowAdminToggleDialog] = useState(false);
-  const [toggleAdminUser, setToggleAdminUser] = useState<AdminUser | null>(null);
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
   });
 
-  const createUserMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/users/create", {
-        invitedBy: "admin"
-      });
-      return response.json() as Promise<CreateUserResponse>;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Account Created Successfully",
-        description: `Username: ${data.credentials.username}\nPassword: ${data.credentials.password}`,
-        duration: 10000,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create user account",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const deleteUserMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      const response = await apiRequest("DELETE", `/api/users/${userId}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "User Deleted",
-        description: "User account has been permanently deleted",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete user",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleDeleteUser = (userId: string, username: string) => {
-    // Protect the main admin
-    if (username === "admin23") {
-      toast({
-        title: "Operazione Non Consentita",
-        description: "Non è possibile eliminare l'admin principale",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (confirm(`Are you sure you want to delete user @${username}? This action cannot be undone.`)) {
-      deleteUserMutation.mutate(userId);
-    }
-  };
-
-  const handleCreateUser = () => {
-    createUserMutation.mutate();
-  };
-
-  const updateCredentialsMutation = useMutation({
-    mutationFn: async ({ userId, username, password }: { userId: string; username?: string; password?: string }) => {
-      const response = await apiRequest("PUT", "/api/admin/update-credentials", {
-        userId,
-        username,
-        password
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      handleCloseDialog();
-      toast({
-        title: "Credenziali aggiornate",
-        description: "Le credenziali dell'utente sono state modificate con successo",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare le credenziali",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleEditCredentials = (user: AdminUser) => {
-    // Protect the main admin
-    if (user.username === "admin23") {
-      toast({
-        title: "Operazione Non Consentita",
-        description: "Non è possibile modificare le credenziali dell'admin principale",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setEditingUser(user);
-    setNewUsername(user.username);
-    setNewPassword("");
-    setInputsEnabled(false);
-    setShowCredentialsEdit(true);
-    
-    // Enable inputs after dialog is fully rendered and settled
-    setTimeout(() => {
-      setInputsEnabled(true);
-    }, 500);
-  };
-
-  const handleSaveCredentials = () => {
-    if (!editingUser) return;
-    
-    const updates: { userId: string; username?: string; password?: string } = {
-      userId: editingUser.id
-    };
-    
-    if (newUsername && newUsername !== editingUser.username) {
-      updates.username = newUsername;
-    }
-    if (newPassword) {
-      updates.password = newPassword;
-    }
-    
-    if (updates.username || updates.password) {
-      updateCredentialsMutation.mutate(updates);
-    } else {
-      setShowCredentialsEdit(false);
-      setInputsEnabled(false);
-    }
-  };
-
-  const handleCloseDialog = () => {
-    setShowCredentialsEdit(false);
-    setInputsEnabled(false);
-    setEditingUser(null);
-    setNewUsername("");
-    setNewPassword("");
-  };
-
-  const toggleAdminMutation = useMutation({
-    mutationFn: async ({ userId, makeAdmin }: { userId: string; makeAdmin: boolean }) => {
-      const response = await apiRequest("PUT", `/api/admin/toggle/${userId}`, { makeAdmin });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setShowAdminToggleDialog(false);
-      setToggleAdminUser(null);
-      toast({
-        title: "Status Admin Aggiornato",
-        description: "Lo status di amministratore è stato modificato con successo",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Errore",
-        description: "Impossibile modificare lo status admin",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleToggleAdmin = (user: AdminUser) => {
-    if (user.username === "admin23") {
-      toast({
-        title: "Operazione Non Consentita",
-        description: "Non è possibile modificare lo status dell'admin principale",
-        variant: "destructive",
-      });
-      return;
-    }
-    setToggleAdminUser(user);
-    setShowAdminToggleDialog(true);
-  };
-
-  const confirmToggleAdmin = () => {
-    if (toggleAdminUser) {
-      toggleAdminMutation.mutate({
-        userId: toggleAdminUser.id,
-        makeAdmin: !toggleAdminUser.isAdmin
-      });
-    }
-  };
-
-
-
   const getActivityStatus = (lastActivity: string) => {
     const now = new Date();
-    const activity = new Date(lastActivity);
-    const diffMinutes = Math.floor((now.getTime() - activity.getTime()) / (1000 * 60));
+    const lastSeen = new Date(lastActivity);
+    const diffInMinutes = Math.floor((now.getTime() - lastSeen.getTime()) / (1000 * 60));
     
-    if (diffMinutes < 5) return { status: "online", color: "bg-green-500", text: "Active now" };
-    if (diffMinutes < 15) return { status: "away", color: "bg-yellow-500", text: `${diffMinutes} min ago` };
-    return { status: "offline", color: "bg-gray-500", text: `${diffMinutes} min ago` };
+    if (diffInMinutes < 5) {
+      return { color: "bg-green-500", text: "Online" };
+    } else if (diffInMinutes < 30) {
+      return { color: "bg-yellow-500", text: `${diffInMinutes}m ago` };
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return { color: "bg-orange-500", text: `${hours}h ago` };
+    } else {
+      const days = Math.floor(diffInMinutes / 1440);
+      return { color: "bg-gray-500", text: `${days}d ago` };
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background p-6">
       {/* Header */}
-      <header className="bg-card border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className="w-8 h-8 bg-red-600">
-              <AvatarFallback>
-                <Crown className="w-4 h-4 text-white" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="font-semibold text-card-foreground">Admin Dashboard</h2>
-              <p className="text-xs text-muted-foreground">God Mode Active - Invisible Monitoring</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="sm" onClick={toggleTheme}>
-              {theme === 'dark' ? "☀️" : "🌙"}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onLogout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-4">
+          <Crown className="w-8 h-8 text-yellow-500" />
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Modalità Solo Visualizzazione</p>
           </div>
         </div>
-      </header>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.hash = '#conversations'}
+            className="mr-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Torna alle Conversazioni
+          </Button>
+          <Button variant="ghost" size="sm" onClick={toggleTheme}>
+            {theme === 'dark' ? "☀️" : "🌙"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onLogout}>
+            <LogOut className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
 
-      {/* Content */}
-      <div className="p-6">
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-2 text-foreground">Active Users</h3>
-          <p className="text-sm text-muted-foreground">Click on any user to view their session invisibly</p>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <UserIcon className="w-8 h-8 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">{users.length}</p>
+                <p className="text-sm text-muted-foreground">Total Users</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <Crown className="w-8 h-8 text-yellow-500" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">{users.filter(u => u.isAdmin).length}</p>
+                <p className="text-sm text-muted-foreground">Administrators</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="w-4 h-4 bg-white rounded-full"></div>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{users.filter(u => getActivityStatus(u.lastActivity).color === "bg-green-500").length}</p>
+                <p className="text-sm text-muted-foreground">Online Now</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Users List */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-foreground mb-4">Users</h2>
         
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-20 bg-muted rounded"></div>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-300 rounded w-20"></div>
+                      <div className="h-3 bg-gray-300 rounded w-16"></div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {users.map((user) => {
               const activity = getActivityStatus(user.lastActivity);
-              
               return (
-                <Card 
-                  key={user.id}
-                  className="cursor-pointer hover:shadow-lg transition-all hover:border-primary"
-                  onClick={() => onViewUser(user.username)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <Avatar className="w-10 h-10 bg-blue-500">
+                <Card key={user.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <Avatar className="w-12 h-12 bg-blue-500">
                         {user.avatar ? (
-                          <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                          <img src={user.avatar} alt={user.name} className="w-full h-full object-cover rounded-full" />
                         ) : (
-                          <AvatarFallback className="text-white font-semibold text-sm">
-                            <UserIcon className="w-5 h-5" />
+                          <AvatarFallback className="text-white font-semibold">
+                            {user.initials}
                           </AvatarFallback>
                         )}
                       </Avatar>
@@ -341,7 +174,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       <div className={`w-3 h-3 ${activity.color} rounded-full`}></div>
                     </div>
                     
-                    <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="space-y-2 text-xs text-muted-foreground mb-4">
                       <div className="flex justify-between">
                         <span>Last Activity:</span>
                         <span>{activity.text}</span>
@@ -356,7 +189,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       </div>
                     </div>
                     
-                    <div className="flex justify-between mt-4 space-x-1">
+                    <div className="flex justify-center">
                       <Button
                         size="sm"
                         variant="outline"
@@ -364,52 +197,11 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                           e.stopPropagation();
                           onViewUser(user.username);
                         }}
-                        className="text-xs flex-1"
+                        className="text-xs"
                       >
                         <Eye className="w-3 h-3 mr-1" />
-                        View
+                        Visualizza Conversazioni
                       </Button>
-                      {user.username !== "admin23" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleAdmin(user);
-                            }}
-                            className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white"
-                            title={user.isAdmin ? "Rimuovi status admin" : "Promuovi ad admin"}
-                          >
-                            <Crown className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditCredentials(user);
-                            }}
-                            className="text-xs"
-                            title="Modifica credenziali"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteUser(user.id, user.username);
-                            }}
-                            className="text-xs"
-                            disabled={deleteUserMutation.isPending}
-                            title="Elimina utente"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -418,19 +210,11 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
           </div>
         )}
         
-        {/* Admin Actions */}
+        {/* Admin Actions - Solo Monitoraggio */}
         <Card className="mt-8">
           <CardContent className="p-6">
-            <h4 className="font-semibold mb-4 text-card-foreground">Admin Actions</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button 
-                onClick={handleCreateUser}
-                disabled={createUserMutation.isPending}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700"
-              >
-                <Shield className="w-4 h-4" />
-                <span>{createUserMutation.isPending ? "Creating..." : "Create Secure Account"}</span>
-              </Button>
+            <h4 className="font-semibold mb-4 text-card-foreground">Controllo Admin</h4>
+            <div className="text-center">
               <Button 
                 onClick={onMonitorSessions}
                 className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700"
@@ -438,98 +222,13 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 <Eye className="w-4 h-4" />
                 <span>Monitor All Sessions</span>
               </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Modalità solo visualizzazione - Non è possibile modificare o eliminare utenti
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Credentials Edit Dialog */}
-      <Dialog open={showCredentialsEdit} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Modifica Credenziali - {editingUser?.username}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="new-username">Nuovo Username</Label>
-              <Input
-                id="new-username"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                placeholder={inputsEnabled ? "Inserisci nuovo username" : "Caricamento..."}
-                disabled={!inputsEnabled}
-                readOnly={!inputsEnabled}
-                autoFocus={false}
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <Label htmlFor="new-password">Nuova Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={inputsEnabled ? "Lascia vuoto per non modificare" : "Caricamento..."}
-                disabled={!inputsEnabled}
-                readOnly={!inputsEnabled}
-                autoFocus={false}
-                autoComplete="off"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={handleCloseDialog}>
-              Annulla
-            </Button>
-            <Button 
-              onClick={handleSaveCredentials}
-              disabled={updateCredentialsMutation.isPending}
-            >
-              {updateCredentialsMutation.isPending ? "Aggiornamento..." : "Salva"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Toggle Admin Status Dialog */}
-      <Dialog open={showAdminToggleDialog} onOpenChange={setShowAdminToggleDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {toggleAdminUser?.isAdmin ? "Rimuovi" : "Aggiungi"} Status Admin - {toggleAdminUser?.username}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              {toggleAdminUser?.isAdmin ? (
-                <>Sei sicuro di voler <strong>rimuovere</strong> i privilegi di amministratore da <strong>@{toggleAdminUser?.username}</strong>?</>
-              ) : (
-                <>Sei sicuro di voler <strong>promuovere</strong> <strong>@{toggleAdminUser?.username}</strong> ad amministratore?</>
-              )}
-            </p>
-            <p className="text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950 p-3 rounded">
-              {toggleAdminUser?.isAdmin ? (
-                "⚠️ L'utente perderà l'accesso al pannello admin e tutte le funzionalità di amministrazione."
-              ) : (
-                "⚠️ Gli amministratori hanno accesso completo al sistema e possono gestire tutti gli utenti."
-              )}
-            </p>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowAdminToggleDialog(false)}>
-              Annulla
-            </Button>
-            <Button 
-              onClick={confirmToggleAdmin}
-              disabled={toggleAdminMutation.isPending}
-              className={toggleAdminUser?.isAdmin ? "bg-red-600 hover:bg-red-700" : "bg-yellow-600 hover:bg-yellow-700"}
-            >
-              {toggleAdminMutation.isPending ? "Aggiornando..." : toggleAdminUser?.isAdmin ? "Rimuovi Admin" : "Promuovi ad Admin"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
