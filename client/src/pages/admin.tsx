@@ -39,14 +39,16 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
   const [editValue, setEditValue] = useState("");
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [hiddenUsers, setHiddenUsers] = useState<Set<string>>(new Set());
   
   const { data: allUsers = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
   });
 
-  // Filtra gli utenti per escludere l'utente corrente
+  // Filtra gli utenti per escludere l'utente corrente e quelli nascosti
   const users = allUsers.filter(user => 
-    currentUser ? user.username !== currentUser.username : true
+    (currentUser ? user.username !== currentUser.username : true) &&
+    !hiddenUsers.has(user.id)
   );
 
   const handleStartEdit = (userId: string, field: 'username' | 'password', currentValue: string) => {
@@ -101,6 +103,11 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
   const handleDeleteUser = async (userId: string, userName: string) => {
     setDeletingUser(userId);
     
+    // Nascondi l'utente dopo l'animazione
+    setTimeout(() => {
+      setHiddenUsers(prev => new Set(prev).add(userId));
+    }, 1500);
+    
     // Animazione con setTimeout per assicurare che sia unidirezionale
     setTimeout(async () => {
       try {
@@ -109,31 +116,43 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
         });
         
         if (response.ok) {
-          // Aspetta che l'animazione finisca prima di aggiornare
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-            toast({
-              title: "✅ Utente eliminato",
-              description: `${userName} è stato eliminato con successo`,
-              duration: 1000,
-            });
-            setDeletingUser(null);
-            setShowDeleteConfirm(null);
-          }, 1500);
+          // Aggiorna i dati nel backend
+          queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+          toast({
+            title: "✅ Utente eliminato",
+            description: `${userName} è stato eliminato con successo`,
+            duration: 1000,
+          });
+          setDeletingUser(null);
+          setShowDeleteConfirm(null);
         } else {
+          // Se fallisce, rimuovi dalle liste e mostra errore
+          setHiddenUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(userId);
+            return newSet;
+          });
           toast({
             title: "❌ Errore", 
             description: "Impossibile eliminare l'utente",
             variant: "destructive",
+            duration: 1000,
           });
           setDeletingUser(null);
           setShowDeleteConfirm(null);
         }
       } catch (error) {
+        // Se fallisce, rimuovi dalle liste e mostra errore
+        setHiddenUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
         toast({
           title: "❌ Errore di rete",
           description: "Verifica la connessione",
           variant: "destructive",
+          duration: 1000,
         });
         setDeletingUser(null);
         setShowDeleteConfirm(null);
