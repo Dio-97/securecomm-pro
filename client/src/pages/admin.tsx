@@ -66,10 +66,10 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
             variant="outline" 
             size="sm" 
             onClick={() => window.location.hash = '#conversations'}
-            className="mr-2"
+            className="mr-2 px-2.5 py-1 h-auto scale-75"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Torna alle Conversazioni
+            <ArrowLeft className="w-3 h-3 mr-1" />
+            <span className="text-xs">Torna alle Conversazioni</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={toggleTheme}>
             {theme === 'dark' ? "☀️" : "🌙"}
