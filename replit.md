@@ -41,6 +41,7 @@ Auto-save conversations: All chat conversations opened through search are automa
 - **Migration**: All user creation, deletion, and message operations now persist across server restarts
 - **Auto-Save Conversations**: All chats opened through search are automatically saved to savedConversations table for all users (August 21, 2025)
 - **Conversation Caching**: Server maintains real-time cache of user conversations updated via WebSocket on saves and messages
+- **Ultra-Fast Refresh**: Client refreshes conversation list every 500ms for instant message visibility and contact updates (August 21, 2025)
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging

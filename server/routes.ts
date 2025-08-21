@@ -905,8 +905,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log('✅ INVIO ISTANTANEO al destinatario');
                 recipientClient.send(JSON.stringify(messageData));
                 
-                // Aggiorna cache conversazioni del destinatario
+                // Aggiorna cache conversazioni del destinatario IMMEDIATAMENTE
                 await updateUserConversationsCache(message.recipientId);
+                
+                // Forza un secondo aggiornamento dopo 100ms per sicurezza
+                setTimeout(async () => {
+                  await updateUserConversationsCache(message.recipientId);
+                }, 100);
               } else {
                 console.log('❌ DESTINATARIO NON CONNESSO');
               }
@@ -916,8 +921,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log('✅ CONFERMA ISTANTANEA al mittente');
                 senderClient.send(JSON.stringify(messageData));
                 
-                // Aggiorna cache conversazioni del mittente  
+                // Aggiorna cache conversazioni del mittente IMMEDIATAMENTE
                 await updateUserConversationsCache(ws.userId);
+                
+                // Forza un secondo aggiornamento dopo 100ms per sicurezza
+                setTimeout(async () => {
+                  if (ws.userId) {
+                    await updateUserConversationsCache(ws.userId);
+                  }
+                }, 100);
               } else {
                 console.log('❌ MITTENTE NON CONNESSO');
               }
