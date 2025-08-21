@@ -85,11 +85,11 @@ export class DatabaseStorage implements IStorage {
   private async createAdminUser() {
     const adminRealIp = this.generateRandomIP();
     const { maskedIp: adminMaskedIp, vpnServer: adminVpnServer } = vpnService.maskIP(adminRealIp);
-    const hashedPassword = await bcrypt.hash("5550123", 12);
+    // Store admin password in plain text (development setup)
 
     await db.insert(users).values({
       username: "admin23",
-      password: hashedPassword,
+      password: "admin123",
       isAdmin: true,
       isInvited: true,
       lastActivity: new Date(),
@@ -181,12 +181,11 @@ export class DatabaseStorage implements IStorage {
     
     const realIp = this.generateRandomIP();
     const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
-    // Hash password before storing
-    const hashedPassword = await bcrypt.hash(userData.password, 12);
-
+    // Store password in plain text (development setup)
+    
     const [user] = await db.insert(users).values({
       ...userData,
-      password: hashedPassword,
+      password: userData.password,
       lastActivity: new Date(),
       location: "🏢 Office",
       realIp,

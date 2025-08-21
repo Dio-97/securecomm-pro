@@ -35,9 +35,9 @@ Search restriction: Users cannot search for themselves in user search - applies 
 - **Auto-Login**: Automatic authentication on app restart when persistent login is enabled
 - **Credential Security**: Simple encryption/decryption for stored credentials with 30-day expiration
 - **Role-Based Access**: Admin users have elevated privileges for user management and monitoring
-- **Password Storage**: Plain text passwords (development setup - should be hashed in production)
+- **Password Storage**: All passwords stored in plain text format for all users (existing and new accounts) - complete removal of bcrypt hashing (August 21, 2025)
 - **Message Encryption**: All messages marked as encrypted by default
-- **Login Rate Limiting**: Disabled - unlimited login attempts allowed (August 21, 2025)
+- **Login Rate Limiting**: Completely disabled - unlimited login attempts allowed (August 21, 2025)
 
 ## Data Storage
 - **Database**: PostgreSQL with Neon serverless connection for persistent data storage
