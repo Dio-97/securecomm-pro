@@ -825,7 +825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 username: ws.username,
               });
               
-              // Send to sender and recipient only
+              // Send to sender and recipient
               const recipientClient = connectedClients.get(message.recipientId);
               const senderClient = connectedClients.get(ws.userId);
               
@@ -834,11 +834,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 message: newMessage 
               };
               
+              // Invia al destinatario
               if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
                 recipientClient.send(JSON.stringify(messageData));
+                
+                // Aggiorna anche la lista conversazioni del destinatario
+                const recipientConversations = await storage.getConversations(message.recipientId);
+                recipientClient.send(JSON.stringify({
+                  type: 'conversations_updated',
+                  conversations: recipientConversations
+                }));
               }
+              
+              // Invia al mittente
               if (senderClient && senderClient.readyState === WebSocket.OPEN) {
                 senderClient.send(JSON.stringify(messageData));
+                
+                // Aggiorna anche la lista conversazioni del mittente
+                const senderConversations = await storage.getConversations(ws.userId);
+                senderClient.send(JSON.stringify({
+                  type: 'conversations_updated',
+                  conversations: senderConversations
+                }));
               }
               
               await storage.updateUserActivity(ws.userId);

@@ -7,6 +7,7 @@ type WebSocketMessage =
   | { type: 'new_message'; message: Message }
   | { type: 'message_history'; messages: Message[] }
   | { type: 'conversations_list'; conversations: Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }> }
+  | { type: 'conversations_updated'; conversations: Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }> }
   | { type: 'message_edited'; message: Message }
   | { type: 'message_deleted'; messageId: string }
   | { type: 'user_joined'; username: string }
@@ -55,6 +56,10 @@ export function useWebSocket() {
           break;
           
         case 'conversations_list':
+          setConversations(message.conversations);
+          break;
+          
+        case 'conversations_updated':
           setConversations(message.conversations);
           break;
           
