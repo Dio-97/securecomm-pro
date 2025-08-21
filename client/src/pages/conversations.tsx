@@ -954,7 +954,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <span>•</span>
             <span>IP: {user.maskedIp?.split('.').slice(0, -1).join('.')}.xxx (Masked)</span>
           </div>
-          <div className="flex items-center space-x-4 relative">
+          <div className="flex items-center space-x-4">
             {user.isAdmin && (
               <Button
                 variant="outline"
@@ -962,8 +962,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                 onClick={() => {
                   window.location.hash = '#admin';
                 }}
-                className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 relative -translate-y-6"
-                style={{ marginBottom: '-3cm' }}
+                className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900"
               >
                 <Crown className="w-3 h-3 mr-1" />
                 Passa ad Admin
