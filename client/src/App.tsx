@@ -30,6 +30,7 @@ function AppContent() {
         setCurrentScreen("admin");
       } else if (hash === 'conversations' && currentUser) {
         setCurrentScreen("conversations");
+        setCurrentConversation(null);
         // Reset God Mode when returning to conversations
         setIsGodMode(false);
         setGodModeTarget("");
@@ -110,11 +111,27 @@ function AppContent() {
   };
 
   const handleBackToConversations = async () => {
+    console.log('🔙 Tornando alle conversazioni...');
+    
+    // Leave current conversation properly  
     if (currentConversation && currentUser) {
       await leaveConversation(currentUser.id, currentConversation.userId);
     }
+    
+    // Clear conversation state
     setCurrentConversation(null);
-    setCurrentScreen(currentUser?.isAdmin ? "admin" : "conversations");
+    
+    // Reset God Mode when going back
+    if (isGodMode) {
+      setIsGodMode(false);
+      setGodModeTarget("");
+    }
+    
+    // Navigate to conversations regardless of admin status when using back button
+    setCurrentScreen("conversations");
+    
+    // Force URL hash update for consistent navigation
+    window.location.hash = '#conversations';
   };
 
   const handleConversationRemoved = () => {
