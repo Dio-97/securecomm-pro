@@ -4,6 +4,26 @@
 @tailwind components;
 @tailwind utilities;
 
+.chat-background {
+  background-image: url("@assets/whatsapp-chat-background-fb34cc4b2hg9lmix_1755813014369.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  position: relative;
+}
+
+.chat-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
 /* Prevent memory leaks from CSS animations */
 * {
   will-change: auto;
