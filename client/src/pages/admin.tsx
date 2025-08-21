@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Crown, Settings, LogOut, Eye, User as UserIcon, ArrowLeft } from "lucide-react";
+import { Crown, Settings, LogOut, Eye, User as UserIcon, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -254,51 +254,92 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                                 e.stopPropagation();
                                 onViewUser(user.username);
                               }}
-                              className="text-xs flex-1"
+                              className="text-xs px-2"
                             >
                               <Eye className="w-3 h-3 mr-1" />
                               Visualizza
                             </Button>
                             
                             {user.username !== "admin23" && (
-                              <Button
-                                size="sm"
-                                variant={user.isAdmin ? "destructive" : "default"}
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const response = await fetch(`/api/users/${user.id}/admin`, {
-                                      method: 'PATCH',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ isAdmin: !user.isAdmin })
-                                    });
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const confirmDelete = confirm(`Sei sicuro di voler eliminare l'utente ${user.name}?`);
+                                    if (!confirmDelete) return;
                                     
-                                    if (response.ok) {
-                                      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                                      toast({
-                                        title: user.isAdmin ? "❌ Admin rimosso" : "✅ Admin aggiunto",
-                                        description: `${user.name} ${user.isAdmin ? 'non è più' : 'è ora'} un admin`,
+                                    try {
+                                      const response = await fetch(`/api/users/${user.id}`, {
+                                        method: 'DELETE'
                                       });
-                                    } else {
+                                      
+                                      if (response.ok) {
+                                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                                        toast({
+                                          title: "✅ Utente eliminato",
+                                          description: `${user.name} è stato eliminato con successo`,
+                                        });
+                                      } else {
+                                        toast({
+                                          title: "❌ Errore",
+                                          description: "Impossibile eliminare l'utente",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    } catch (error) {
                                       toast({
-                                        title: "❌ Errore",
-                                        description: "Impossibile modificare lo status admin",
+                                        title: "❌ Errore di rete",
+                                        description: "Verifica la connessione",
                                         variant: "destructive",
                                       });
                                     }
-                                  } catch (error) {
-                                    toast({
-                                      title: "❌ Errore di rete",
-                                      description: "Verifica la connessione",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                                className="text-xs"
-                              >
-                                <Crown className="w-3 h-3 mr-1" />
-                                {user.isAdmin ? 'Rimuovi' : 'Rendi'} Admin
-                              </Button>
+                                  }}
+                                  className="text-xs px-2"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                                
+                                <Button
+                                  size="sm"
+                                  variant={user.isAdmin ? "destructive" : "default"}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const response = await fetch(`/api/users/${user.id}/admin`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ isAdmin: !user.isAdmin })
+                                      });
+                                      
+                                      if (response.ok) {
+                                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                                        toast({
+                                          title: user.isAdmin ? "❌ Admin rimosso" : "✅ Admin aggiunto",
+                                          description: `${user.name} ${user.isAdmin ? 'non è più' : 'è ora'} un admin`,
+                                        });
+                                      } else {
+                                        toast({
+                                          title: "❌ Errore",
+                                          description: "Impossibile modificare lo status admin",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    } catch (error) {
+                                      toast({
+                                        title: "❌ Errore di rete",
+                                        description: "Verifica la connessione",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <Crown className="w-3 h-3 mr-1" />
+                                  {user.isAdmin ? 'Rimuovi' : 'Rendi'} Admin
+                                </Button>
+                              </>
                             )}
                           </div>
                           
