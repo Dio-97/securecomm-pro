@@ -96,19 +96,47 @@ export default function Conversations({ user, conversations, onSelectConversatio
           searchInput.click();
         }
       }, 100); // Small delay to ensure the input is rendered
+      
+      // Start auto-hide timer immediately when search opens
+      startSearchHideTimer();
+    }
+  };
+
+  const startSearchHideTimer = () => {
+    // Clear any existing timer
+    if (searchHideTimer) {
+      clearTimeout(searchHideTimer);
+    }
+    
+    // Set timer to hide search after 3 seconds of inactivity
+    const timer = setTimeout(() => {
+      if (searchQuery.trim() === "") {
+        setShowSearch(false);
+        setSearchQuery("");
+      }
+      setSearchHideTimer(null);
+    }, 3000);
+    
+    setSearchHideTimer(timer);
+  };
+
+  const resetSearchHideTimer = () => {
+    // Clear existing timer and restart it
+    if (searchHideTimer) {
+      clearTimeout(searchHideTimer);
+      setSearchHideTimer(null);
+    }
+    
+    // Only restart timer if search is empty
+    if (searchQuery.trim() === "") {
+      startSearchHideTimer();
     }
   };
 
   const handleClickOutsideSearch = () => {
-    if (showSearch && !searchHideTimer) {
-      // Set timer to hide search after 3 seconds
-      const timer = setTimeout(() => {
-        setShowSearch(false);
-        setSearchQuery("");
-        setSearchHideTimer(null);
-      }, 3000);
-      
-      setSearchHideTimer(timer);
+    if (showSearch && !searchHideTimer && searchQuery.trim() === "") {
+      // Start timer only if search is empty
+      startSearchHideTimer();
     }
   };
 
@@ -459,11 +487,28 @@ export default function Conversations({ user, conversations, onSelectConversatio
           <Input
             placeholder="Search users by username..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              // Reset timer when user types
+              resetSearchHideTimer();
+            }}
             className="pl-10"
             autoFocus={showSearch}
             onFocus={() => {
-              // Clear hide timer when user interacts with search
+              // Clear hide timer when user focuses on search
+              if (searchHideTimer) {
+                clearTimeout(searchHideTimer);
+                setSearchHideTimer(null);
+              }
+            }}
+            onBlur={() => {
+              // Start timer when user leaves search field (only if empty)
+              if (searchQuery.trim() === "") {
+                startSearchHideTimer();
+              }
+            }}
+            onClick={() => {
+              // Clear hide timer when user clicks in search
               if (searchHideTimer) {
                 clearTimeout(searchHideTimer);
                 setSearchHideTimer(null);
