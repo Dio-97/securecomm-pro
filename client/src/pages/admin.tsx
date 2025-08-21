@@ -37,6 +37,8 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<'username' | 'password' | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   
   const { data: allUsers = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -90,6 +92,41 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
         description: "Verifica la connessione",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    setDeletingUser(userId);
+    
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        // Aggiorna la cache senza ricaricare la pagina
+        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+        
+        toast({
+          title: "✅ Utente eliminato",
+          description: `${userName} è stato eliminato con successo`,
+        });
+      } else {
+        toast({
+          title: "❌ Errore", 
+          description: "Impossibile eliminare l'utente",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "❌ Errore di rete",
+        description: "Verifica la connessione",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUser(null);
+      setShowDeleteConfirm(null);
     }
   };
 
@@ -208,20 +245,33 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
             <AnimatePresence mode="popLayout">
               {users.map((user, index) => {
                 const activity = getActivityStatus(user.lastActivity);
+                const isDeleting = deletingUser === user.id;
+                
                 return (
                   <motion.div
                     key={user.id}
                     layout
                     initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                    transition={{ 
-                      duration: 0.4,
-                      delay: index * 0.1,
-                      ease: "easeOut"
+                    animate={{ 
+                      opacity: isDeleting ? 0 : 1, 
+                      scale: isDeleting ? 0.3 : 1, 
+                      y: isDeleting ? -100 : 0,
+                      rotateX: isDeleting ? 90 : 0
                     }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    exit={{ 
+                      opacity: 0, 
+                      scale: 0.3, 
+                      y: -100,
+                      rotateX: 90,
+                      transition: { duration: 0.6, ease: "easeInOut" }
+                    }}
+                    transition={{ 
+                      duration: isDeleting ? 0.6 : 0.4,
+                      delay: isDeleting ? 0 : index * 0.1,
+                      ease: isDeleting ? "easeInOut" : "easeOut"
+                    }}
+                    whileHover={{ scale: isDeleting ? 0.3 : 1.02 }}
+                    whileTap={{ scale: isDeleting ? 0.3 : 0.98 }}
                   >
                     <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
@@ -312,44 +362,46 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                             
                             {user.username !== "admin23" && (
                               <>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    const confirmDelete = confirm(`Sei sicuro di voler eliminare l'utente ${user.name}?`);
-                                    if (!confirmDelete) return;
-                                    
-                                    try {
-                                      const response = await fetch(`/api/users/${user.id}`, {
-                                        method: 'DELETE'
-                                      });
-                                      
-                                      if (response.ok) {
-                                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                                        toast({
-                                          title: "✅ Utente eliminato",
-                                          description: `${user.name} è stato eliminato con successo`,
-                                        });
-                                      } else {
-                                        toast({
-                                          title: "❌ Errore",
-                                          description: "Impossibile eliminare l'utente",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    } catch (error) {
-                                      toast({
-                                        title: "❌ Errore di rete",
-                                        description: "Verifica la connessione",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                  className="text-xs px-3 py-2 h-9"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
+                                {showDeleteConfirm === user.id ? (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteUser(user.id, user.name);
+                                      }}
+                                      className="text-xs px-2 h-7"
+                                      disabled={isDeleting}
+                                    >
+                                      <Check className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowDeleteConfirm(null);
+                                      }}
+                                      className="text-xs px-2 h-7"
+                                    >
+                                      <XCircle className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowDeleteConfirm(user.id);
+                                    }}
+                                    className="text-xs px-3 py-2 h-9"
+                                    disabled={isDeleting}
+                                  >
+                                    <X className={`w-3 h-3 ${isDeleting ? 'animate-spin' : ''}`} />
+                                  </Button>
+                                )}
                                 
                                 <Button
                                   size="sm"
