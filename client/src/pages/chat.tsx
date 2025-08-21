@@ -10,7 +10,7 @@ import { MessageBubble } from "@/components/message-bubble";
 import { WalkieTalkie, useAudioPlayer } from "@/components/walkie-talkie";
 import { PresenceIndicator } from "@/components/presence-indicator";
 import { QRCodeModal } from "@/components/QRCodeModal";
-import { SecurityPanel } from "@/components/SecurityPanel";
+import { VPNStatus } from "@/components/vpn-status";
 import type { Message, User as UserType } from "@shared/schema";
 
 interface ChatProps {
@@ -48,7 +48,7 @@ export default function Chat({
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrMode, setQRMode] = useState<'generate' | 'scan'>('generate');
   const [qrPurpose, setQRPurpose] = useState<'message' | 'file'>('message');
-  const [showSecurityPanel, setShowSecurityPanel] = useState(false);
+  const [showVPNPanel, setShowVPNPanel] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showChatVerificationConfirm, setShowChatVerificationConfirm] = useState(false);
 
@@ -258,7 +258,7 @@ export default function Chat({
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => setShowSecurityPanel(true)}
+            onClick={() => setShowVPNPanel(true)}
             title="Security & Protection"
           >
             <Shield className="w-4 h-4" />
@@ -367,13 +367,23 @@ export default function Chat({
         </div>
       </div>
 
-      {/* Security Panel */}
-      <SecurityPanel 
-        userId={user.id}
-        username={user.username}
-        isVisible={showSecurityPanel}
-        onClose={() => setShowSecurityPanel(false)}
-      />
+      {/* VPN Panel */}
+      {showVPNPanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 max-w-sm w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">VPN Status</h3>
+              <Button onClick={() => setShowVPNPanel(false)} variant="ghost" size="sm">
+                ✕
+              </Button>
+            </div>
+            <VPNStatus user={user} onVPNRotate={(newData) => {
+              // Update user VPN data in parent component if needed
+              console.log('VPN rotated:', newData);
+            }} />
+          </div>
+        </div>
+      )}
 
 
 

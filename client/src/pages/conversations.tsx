@@ -8,9 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useTheme } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { VPNStatus } from "@/components/vpn-status";
-import { PresenceIndicator } from "@/components/presence-indicator";
 import { SecurityPanel } from "@/components/SecurityPanel";
+import { PresenceIndicator } from "@/components/presence-indicator";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, Message } from "@shared/schema";
@@ -264,9 +263,28 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
       )}
 
-      {/* VPN Status */}
+      {/* Security Panel Quick Access */}
       <div className="border-b p-4">
-        <VPNStatus user={user} onVPNRotate={handleVPNRotate} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Shield className="w-4 h-4 text-green-500" />
+            <span className="text-sm font-medium">Sicurezza Attiva</span>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSecurityPanel(true)}
+            className="text-xs"
+          >
+            <Shield className="w-3 h-3 mr-1" />
+            Centro Sicurezza
+          </Button>
+        </div>
+        
+        <div className="mt-2 text-xs text-muted-foreground">
+          VPN: {user.vpnCountry} • DNS Sicuro: Attivo • QR: Disponibile
+        </div>
       </div>
 
       {/* Conversations List */}
