@@ -625,6 +625,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user by username endpoint (for God Mode)
+  app.get("/api/user/by-username/:username", async (req, res) => {
+    try {
+      const { username } = req.params;
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Return user data without sensitive info like password
+      const safeUserData = {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        isAdmin: user.isAdmin,
+        lastActivity: user.lastActivity,
+        location: user.location,
+        vpnCountry: user.vpnCountry,
+        vpnServer: user.vpnServer
+      };
+      
+      res.json(safeUserData);
+    } catch (error) {
+      console.error("Error fetching user by username:", error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
   // WebSocket connection handling
   // Send presence updates to all clients
   const broadcastPresenceUpdate = (userId: string, status: 'online' | 'offline') => {

@@ -58,8 +58,22 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [showCredentialsEdit, setShowCredentialsEdit] = useState(false);
   const [newUsernameForEdit, setNewUsernameForEdit] = useState("");
   const [newPasswordForEdit, setNewPasswordForEdit] = useState("");
+  const [targetUserData, setTargetUserData] = useState<UserType | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+
+  // Fetch target user data when in God Mode
+  const { data: targetUser } = useQuery<UserType>({
+    queryKey: [`/api/user/by-username/${godModeTarget}`],
+    enabled: isGodMode && !!godModeTarget,
+  });
+
+  // Update target user data when query completes
+  useEffect(() => {
+    if (targetUser && isGodMode) {
+      setTargetUserData(targetUser);
+    }
+  }, [targetUser, isGodMode]);
 
   const handleVPNRotate = (newData: { maskedIp: string; vpnServer: string; vpnCountry: string; location: string }) => {
     if (onUserUpdate) {
@@ -594,8 +608,8 @@ export default function Conversations({ user, conversations, onSelectConversatio
             onClick={() => setShowAvatarUpload(true)}
             title="Clicca per cambiare immagine profilo"
           >
-            {user.avatar ? (
-              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+            {(isGodMode ? targetUserData?.avatar : user.avatar) ? (
+              <img src={(isGodMode ? targetUserData?.avatar : user.avatar) || ''} alt="Avatar" className="w-full h-full object-cover rounded-full" />
             ) : (
               <AvatarFallback>
                 <User className="w-4 h-4 text-primary-foreground" />
@@ -609,7 +623,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                 onClick={handleUsernameClick}
                 title="Tocca per modificare nome utente"
               >
-                {user.username}
+                {isGodMode ? (targetUserData?.username || godModeTarget) : user.username}
                 {isGodMode && <span className="ml-2 text-red-500">(Vista Admin)</span>}
               </h2>
               <Button 
