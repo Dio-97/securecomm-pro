@@ -11,6 +11,7 @@ Message positioning: User's own messages on right (blue), received messages on l
 Keyboard behavior: Never close automatically when sending messages - stays open until user manually closes
 Ultra-fast refresh: Conversation list updates every 500ms for instant message visibility
 Conversation UI: Blue dot indicator for new messages next to status; X button always visible but subtle (gray, 50% opacity)
+Search restriction: Users cannot search for themselves in user search - applies to all user types including admins
 
 # System Architecture
 
