@@ -298,34 +298,31 @@ export class DatabaseStorage implements IStorage {
 
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
-    // Aggiungi tutti gli utenti disponibili alla lista, senza messaggi se la chat è stata cleared
+    // Aggiungi tutti gli utenti disponibili alla lista
     for (const user of allUsers) {
       const conversationState = await this.getUserConversationState(userId, user.id);
       
-      if (!conversationState?.conversationCleared) {
+      // Mostra sempre l'utente, ma nascondi i messaggi se la chat è stata cleared
+      const shouldShowMessages = !conversationState?.conversationCleared;
+      
+      let lastMessage = undefined;
+      if (shouldShowMessages) {
         // Solo se la conversazione non è stata cleared, cerca l'ultimo messaggio
-        const [lastMessage] = await db.select().from(messages).where(
+        const [message] = await db.select().from(messages).where(
           or(
             and(eq(messages.userId, userId), eq(messages.recipientId, user.id)),
             and(eq(messages.userId, user.id), eq(messages.recipientId, userId))
           )
         ).orderBy(desc(messages.timestamp)).limit(1);
-
-        conversations.set(user.id, {
-          userId: user.id,
-          username: user.username,
-          lastMessage: lastMessage || undefined,
-          unreadCount: 0
-        });
-      } else {
-        // Conversazione cleared: mostra solo l'utente senza messaggi
-        conversations.set(user.id, {
-          userId: user.id,
-          username: user.username,
-          lastMessage: undefined,
-          unreadCount: 0
-        });
+        lastMessage = message || undefined;
       }
+
+      conversations.set(user.id, {
+        userId: user.id,
+        username: user.username,
+        lastMessage: lastMessage,
+        unreadCount: 0
+      });
     }
 
     return Array.from(conversations.values());
