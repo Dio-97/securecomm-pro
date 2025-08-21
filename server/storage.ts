@@ -434,6 +434,7 @@ export class DatabaseStorage implements IStorage {
       
       // Mostra la conversazione solo se non è stata cleared
       const shouldShowMessages = !conversationState?.conversationCleared;
+      console.log(`🔍 shouldShowMessages per ${otherUser.username}:`, shouldShowMessages, 'conversationCleared:', conversationState?.conversationCleared);
       
       let lastMessage = undefined;
       if (shouldShowMessages) {
