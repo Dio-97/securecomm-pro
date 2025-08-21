@@ -189,8 +189,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/search/:query", async (req, res) => {
     try {
       const { query } = req.params;
+      const currentUserId = (req as any).session?.user?.id;
+      
+      if (!currentUserId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      // Ottieni tutti gli utenti senza filtri per la ricerca
       const allUsers = await storage.getAllUsers();
+      
+      // Filtra gli utenti che corrispondono alla query, escludendo l'utente corrente
       const filtered = allUsers.filter(user => 
+        user.id !== currentUserId &&
         user.username.toLowerCase().includes(query.toLowerCase())
       ).map(user => ({
         id: user.id,
@@ -200,8 +210,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastActivity: user.lastActivity,
         location: user.location
       }));
+      
       res.json(filtered);
     } catch (error) {
+      console.error("Error searching users:", error);
       res.status(500).json({ message: "Failed to search users" });
     }
   });
