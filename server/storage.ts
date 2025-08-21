@@ -1,5 +1,5 @@
-import { type User, type Message, type InsertUser, type Invitation, type SavedConversation, type SharedFile, type CryptoSession } from "@shared/schema";
-import { users, messages, invitations, savedConversations, sharedFiles, cryptoSessions } from "@shared/schema";
+import { type User, type Message, type InsertUser, type Invitation, type SavedConversation, type SharedFile, type CryptoSession, type ConversationState, type InsertConversationState } from "@shared/schema";
+import { users, messages, invitations, savedConversations, sharedFiles, cryptoSessions, conversationStates } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -40,6 +40,12 @@ export interface IStorage {
   removeSavedConversation(userId: string, otherUserId: string): Promise<void>;
   editMessage(messageId: string, content: string, editedBy: string): Promise<Message | undefined>;
   deleteMessage(messageId: string): Promise<boolean>;
+  
+  // Advanced conversation state management
+  getUserConversationState(userId: string, otherUserId: string): Promise<ConversationState | undefined>;
+  updateConversationState(userId: string, otherUserId: string, updates: Partial<ConversationState>): Promise<void>;
+  markConversationAsCleared(userId: string, otherUserId: string): Promise<void>;
+  checkAndDestroyMessages(userId1: string, userId2: string): Promise<void>;
   
   // Invitation management
   createInvitation(email: string, invitedBy: string): Promise<Invitation>;
@@ -260,6 +266,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversationMessages(userId1: string, userId2: string): Promise<Message[]> {
+    // Controlla lo stato della conversazione per userId1
+    const conversationState = await this.getUserConversationState(userId1, userId2);
+    
+    // Se la conversazione è stata cleared per questo utente, non mostra messaggi
+    if (conversationState?.conversationCleared) {
+      return [];
+    }
+    
     return await db.select().from(messages).where(
       or(
         and(eq(messages.userId, userId1), eq(messages.recipientId, userId2)),
@@ -269,23 +283,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
-    const userMessages = await db.select().from(messages).where(
-      or(eq(messages.userId, userId), eq(messages.recipientId, userId))
-    ).orderBy(desc(messages.timestamp));
+    // Prima, ottieni tutti gli utenti per mostrare sempre la lista contatti
+    const allUsers = await db.select().from(users).where(
+      and(
+        // Escludi se stesso
+        sql`${users.id} != ${userId}`,
+        // Includi admin23 e tutti gli utenti invitati
+        or(
+          eq(users.username, "admin23"),
+          eq(users.isInvited, true)
+        )
+      )
+    );
 
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
-    for (const message of userMessages) {
-      const otherUserId = message.userId === userId ? message.recipientId : message.userId;
-      const otherUsername = message.userId === userId ? 
-        (await this.getUser(message.recipientId))?.username || "Unknown" :
-        message.username;
+    // Aggiungi tutti gli utenti disponibili alla lista, senza messaggi se la chat è stata cleared
+    for (const user of allUsers) {
+      const conversationState = await this.getUserConversationState(userId, user.id);
+      
+      if (!conversationState?.conversationCleared) {
+        // Solo se la conversazione non è stata cleared, cerca l'ultimo messaggio
+        const [lastMessage] = await db.select().from(messages).where(
+          or(
+            and(eq(messages.userId, userId), eq(messages.recipientId, user.id)),
+            and(eq(messages.userId, user.id), eq(messages.recipientId, userId))
+          )
+        ).orderBy(desc(messages.timestamp)).limit(1);
 
-      if (!conversations.has(otherUserId)) {
-        conversations.set(otherUserId, {
-          userId: otherUserId,
-          username: otherUsername,
-          lastMessage: message,
+        conversations.set(user.id, {
+          userId: user.id,
+          username: user.username,
+          lastMessage: lastMessage || undefined,
+          unreadCount: 0
+        });
+      } else {
+        // Conversazione cleared: mostra solo l'utente senza messaggi
+        conversations.set(user.id, {
+          userId: user.id,
+          username: user.username,
+          lastMessage: undefined,
           unreadCount: 0
         });
       }
@@ -360,6 +397,12 @@ export class DatabaseStorage implements IStorage {
     }
     
     this.activeConversations.get(conversationKey)!.add(joinedUserId);
+    
+    // Reset dello stato della conversazione quando l'utente rientra
+    this.updateConversationState(joinedUserId, otherUserId, {
+      isActiveInChat: true,
+      conversationCleared: false,
+    }).catch(console.error);
   }
 
   async leaveConversation(userId: string, otherUserId: string, leftUserId: string): Promise<void> {
@@ -368,11 +411,78 @@ export class DatabaseStorage implements IStorage {
     if (this.activeConversations.has(conversationKey)) {
       this.activeConversations.get(conversationKey)!.delete(leftUserId);
       
-      // Se non ci sono più utenti attivi nella conversazione, elimina tutti i messaggi
+      // Aggiorna lo stato della conversazione per l'utente che esce
+      await this.markConversationAsCleared(leftUserId, otherUserId);
+      
+      // Se non ci sono più utenti attivi nella conversazione, controlla se distruggere i messaggi
       if (this.activeConversations.get(conversationKey)!.size === 0) {
-        await this.clearConversation(userId, otherUserId);
+        await this.checkAndDestroyMessages(userId, otherUserId);
         this.activeConversations.delete(conversationKey);
       }
+    }
+  }
+
+  // Nuove implementazioni per la gestione avanzata dello stato delle conversazioni
+  async getUserConversationState(userId: string, otherUserId: string): Promise<ConversationState | undefined> {
+    const [state] = await db.select().from(conversationStates).where(
+      and(eq(conversationStates.userId, userId), eq(conversationStates.otherUserId, otherUserId))
+    );
+    return state || undefined;
+  }
+
+  async updateConversationState(userId: string, otherUserId: string, updates: Partial<ConversationState>): Promise<void> {
+    const existingState = await this.getUserConversationState(userId, otherUserId);
+    
+    if (existingState) {
+      await db.update(conversationStates).set({
+        ...updates,
+        lastActivity: new Date(),
+      }).where(
+        and(eq(conversationStates.userId, userId), eq(conversationStates.otherUserId, otherUserId))
+      );
+    } else {
+      await db.insert(conversationStates).values({
+        userId,
+        otherUserId,
+        ...updates,
+        lastActivity: new Date(),
+      });
+    }
+  }
+
+  async markConversationAsCleared(userId: string, otherUserId: string): Promise<void> {
+    await this.updateConversationState(userId, otherUserId, {
+      conversationCleared: true,
+      isActiveInChat: false,
+      hasUnreadMessages: false,
+    });
+  }
+
+  async checkAndDestroyMessages(userId1: string, userId2: string): Promise<void> {
+    // Controlla se entrambi gli utenti hanno la conversazione marcata come cleared
+    const state1 = await this.getUserConversationState(userId1, userId2);
+    const state2 = await this.getUserConversationState(userId2, userId1);
+    
+    const bothCleared = (state1?.conversationCleared || false) && (state2?.conversationCleared || false);
+    
+    if (bothCleared) {
+      // Distruggi permanentemente tutti i messaggi tra questi utenti
+      await db.delete(messages).where(
+        or(
+          and(eq(messages.userId, userId1), eq(messages.recipientId, userId2)),
+          and(eq(messages.userId, userId2), eq(messages.recipientId, userId1))
+        )
+      );
+      
+      // Rimuovi anche gli stati delle conversazioni
+      await db.delete(conversationStates).where(
+        or(
+          and(eq(conversationStates.userId, userId1), eq(conversationStates.otherUserId, userId2)),
+          and(eq(conversationStates.userId, userId2), eq(conversationStates.otherUserId, userId1))
+        )
+      );
+      
+      console.log(`🔥 Messaggi distrutti permanentemente tra ${userId1} e ${userId2}`);
     }
   }
 }

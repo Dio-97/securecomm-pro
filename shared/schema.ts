@@ -63,6 +63,18 @@ export const savedConversations = pgTable("saved_conversations", {
   isVerified: boolean("is_verified").default(false),
 });
 
+// Nuova tabella per tracciare lo stato individuale delle conversazioni
+export const conversationStates = pgTable("conversation_states", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  otherUserId: varchar("other_user_id").references(() => users.id).notNull(),
+  lastSeenMessageId: varchar("last_seen_message_id"),
+  isActiveInChat: boolean("is_active_in_chat").default(false),
+  hasUnreadMessages: boolean("has_unread_messages").default(false),
+  conversationCleared: boolean("conversation_cleared").default(false),
+  lastActivity: timestamp("last_activity").defaultNow(),
+});
+
 export const sharedFiles = pgTable("shared_files", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   filename: text("filename").notNull(),
@@ -105,6 +117,8 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const insertConversationStateSchema = createInsertSchema(conversationStates);
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Message = typeof messages.$inferSelect;
@@ -112,4 +126,6 @@ export type Invitation = typeof invitations.$inferSelect;
 export type SavedConversation = typeof savedConversations.$inferSelect;
 export type SharedFile = typeof sharedFiles.$inferSelect;
 export type CryptoSession = typeof cryptoSessions.$inferSelect;
+export type ConversationState = typeof conversationStates.$inferSelect;
+export type InsertConversationState = z.infer<typeof insertConversationStateSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
