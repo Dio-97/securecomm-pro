@@ -24,9 +24,11 @@ interface LoginProps {
 }
 
 export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
-  const [step, setStep] = useState<"username" | "password">("username");
+  const [step, setStep] = useState<"username" | "password" | "twoFactor">("username");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [generatedCode, setGeneratedCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [persistentLogin, setPersistentLogin] = useState(isPersistentLoginEnabled());
   const [isAutoLoginAttempting, setIsAutoLoginAttempting] = useState(true);
@@ -95,7 +97,20 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
 
       const result = await login({ username, password });
       
-      // Save credentials if persistent login is enabled
+      // Check if 2FA is required
+      if (result.requiresTwoFactor) {
+        setGeneratedCode(result.code); // For development display
+        setStep('twoFactor');
+        toast({
+          title: "2FA Required",
+          description: `Your verification code is: ${result.code}`,
+          duration: 30000, // Show for 30 seconds
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Direct login success (admin bypass or 2FA completed)
       if (persistentLogin) {
         saveCredentials(username, password);
       }
@@ -106,6 +121,37 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
       toast({ duration: 1000, 
         title: "Authentication Failed",
         description: error.message || "Invalid credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTwoFactorSubmit = async () => {
+    if (!twoFactorCode || twoFactorCode.length !== 6) {
+      toast({
+        title: "Error",
+        description: "Please enter the 6-digit verification code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await login({ username, password, twoFactorCode });
+      
+      if (persistentLogin) {
+        saveCredentials(username, password);
+      }
+      
+      onLogin(result.user);
+      onWebSocketAuth(username, password);
+    } catch (error: any) {
+      toast({
+        title: "Verification Failed",
+        description: error.message || "Invalid verification code",
         variant: "destructive",
       });
     } finally {
@@ -217,6 +263,68 @@ export default function Login({ onLogin, onWebSocketAuth }: LoginProps) {
                   <Lock className="w-4 h-4 mr-2" />
                   {loading ? "Authenticating..." : "Secure Login"}
                 </Button>
+              </div>
+            )}
+
+            {step === "twoFactor" && (
+              <div className="space-y-4">
+                <div className="flex items-center mb-4">
+                  <Button variant="ghost" size="sm" onClick={() => setStep("password")} className="p-2">
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="font-medium text-foreground ml-2">Two-Factor Authentication</span>
+                </div>
+                
+                <div className="text-center mb-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Enter the 6-digit verification code
+                  </p>
+                  {generatedCode && (
+                    <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-sm font-mono text-yellow-800 dark:text-yellow-200">
+                        Development Code: <strong>{generatedCode}</strong>
+                      </p>
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                        In production, this would be sent via SMS/Email
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="twoFactorCode" className="text-muted-foreground">Verification Code</Label>
+                  <Input
+                    id="twoFactorCode"
+                    type="text"
+                    value={twoFactorCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setTwoFactorCode(value);
+                    }}
+                    placeholder="000000"
+                    className="mt-2 text-center text-lg font-mono tracking-widest"
+                    maxLength={6}
+                    onKeyDown={(e) => e.key === "Enter" && handleTwoFactorSubmit()}
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleTwoFactorSubmit} 
+                  className="w-full" 
+                  disabled={loading || twoFactorCode.length !== 6}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  {loading ? "Verifying..." : "Verify Code"}
+                </Button>
+                
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Code expires in 5 minutes
+                  </p>
+                </div>
               </div>
             )}
             

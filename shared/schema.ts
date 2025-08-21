@@ -27,6 +27,10 @@ export const users = pgTable("users", {
   // QR verification
   verificationQR: text("verification_qr"),
   isVerified: boolean("is_verified").default(false),
+  // Two-Factor Authentication
+  twoFactorCode: text("two_factor_code"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(true),
+  twoFactorSecret: text("two_factor_secret"),
 });
 
 export const messages = pgTable("messages", {
@@ -115,6 +119,14 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 export const loginSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
+  twoFactorCode: z.string().min(6).max(6).optional(),
+  step: z.enum(['username', 'password', 'twoFactor']).optional(),
+});
+
+export const twoFactorSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  twoFactorCode: z.string().min(6).max(6),
 });
 
 export const insertConversationStateSchema = createInsertSchema(conversationStates);

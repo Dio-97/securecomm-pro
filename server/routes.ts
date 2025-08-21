@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { loginSchema, insertMessageSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
 import { vpnService } from "./vpn-service";
 import { qrService } from "./qr-service";
 import { wireGuardService } from "./wireguard-service";
@@ -11,6 +12,7 @@ import { dnsService } from "./dns-service";
 import { fileService } from "./file-service";
 import express from "express";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
@@ -32,6 +34,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   const connectedClients = new Map<string, AuthenticatedWebSocket>();
   const MAX_CONNECTIONS = 20;
+
+  // Rate limiting configuration
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Max 5 login attempts per IP per window
+    message: {
+      error: "Too many login attempts",
+      retryAfter: "Please try again after 15 minutes"
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Skip rate limiting for localhost in development
+    skip: (req) => process.env.NODE_ENV === 'development' && req.ip === '127.0.0.1'
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute  
+    max: 100, // Max 100 requests per IP per minute
+    message: {
+      error: "Too many requests",
+      retryAfter: "Please slow down"
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
   
   // Add health check endpoint
   app.get("/api/health", (req, res) => {
@@ -45,17 +72,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Authentication endpoint
-  app.post("/api/auth/login", async (req, res) => {
+  // Apply rate limiting to all API routes
+  app.use('/api', apiLimiter);
+
+  // Authentication endpoint with 2FA support
+  app.post("/api/auth/login", loginLimiter, async (req, res) => {
     try {
-      const { username, password } = loginSchema.parse(req.body);
+      const { username, password, twoFactorCode } = loginSchema.parse(req.body);
       
       const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
+      if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
-      // Get client IP and update user activity
+
+      // Verify password using bcrypt
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Admin bypass for 2FA (come richiesto)  
+      if (user.isAdmin) {
+        console.log(`🔓 Admin ${username} bypassing 2FA as requested`);
+        
+        const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+        await storage.updateUserActivity(user.id, clientIp);
+        
+        return res.json({ 
+          user: { 
+            id: user.id, 
+            username: user.username, 
+            avatar: user.avatar,
+            isAdmin: user.isAdmin,
+            maskedIp: user.maskedIp,
+            vpnServer: user.vpnServer,
+            vpnCountry: user.vpnCountry
+          } 
+        });
+      }
+
+      // Step 1: Username/Password validation successful, generate 2FA code
+      if (!twoFactorCode) {
+        const code = await storage.storeTwoFactorCode(user.id);
+        console.log(`📱 2FA code sent for ${username}: ${code}`);
+        return res.json({ 
+          requiresTwoFactor: true,
+          message: "2FA code required",
+          // In a real system, this would be sent via SMS/email
+          // For development, we include it in response
+          code: code 
+        });
+      }
+
+      // Step 2: Verify 2FA code
+      const isCodeValid = await storage.verifyTwoFactorCode(user.id, twoFactorCode);
+      if (!isCodeValid) {
+        return res.status(401).json({ message: "Invalid 2FA code" });
+      }
+
+      // 2FA successful - complete login
       const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
       await storage.updateUserActivity(user.id, clientIp);
       
@@ -71,6 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } 
       });
     } catch (error) {
+      console.error("Login error:", error);
       res.status(400).json({ message: "Invalid request" });
     }
   });

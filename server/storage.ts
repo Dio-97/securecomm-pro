@@ -4,6 +4,7 @@ import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // User management
@@ -20,6 +21,11 @@ export interface IStorage {
   updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean>;
   updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
   updateUserPassword(userId: string, password: string): Promise<boolean>;
+  
+  // Two-Factor Authentication
+  generateTwoFactorCode(): string;
+  storeTwoFactorCode(userId: string): Promise<string>;
+  verifyTwoFactorCode(userId: string, inputCode: string): Promise<boolean>;
   
   // Presence management
   setUserOnline(userId: string): Promise<void>;
@@ -75,10 +81,11 @@ export class DatabaseStorage implements IStorage {
   private async createAdminUser() {
     const adminRealIp = this.generateRandomIP();
     const { maskedIp: adminMaskedIp, vpnServer: adminVpnServer } = vpnService.maskIP(adminRealIp);
+    const hashedPassword = await bcrypt.hash("5550123", 12);
 
     await db.insert(users).values({
       username: "admin23",
-      password: "5550123",
+      password: hashedPassword,
       isAdmin: true,
       isInvited: true,
       lastActivity: new Date(),
@@ -89,7 +96,61 @@ export class DatabaseStorage implements IStorage {
       vpnCountry: "Switzerland",
       messageCount: "0",
       isVerified: true,
+      twoFactorEnabled: false, // Admin bypass come richiesto
+      twoFactorCode: null,
+      twoFactorSecret: null,
     });
+  }
+
+  // Generate 6-digit 2FA code
+  generateTwoFactorCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Store 2FA code for user
+  async storeTwoFactorCode(userId: string): Promise<string> {
+    const code = this.generateTwoFactorCode();
+    await db.update(users)
+      .set({ 
+        twoFactorCode: code,
+        // Code expires in 5 minutes (stored as timestamp)
+        twoFactorSecret: Date.now().toString()
+      })
+      .where(eq(users.id, userId));
+    
+    console.log(`🔐 2FA code generated for user ${userId}: ${code}`);
+    return code;
+  }
+
+  // Verify 2FA code
+  async verifyTwoFactorCode(userId: string, inputCode: string): Promise<boolean> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user || !user.twoFactorCode || !user.twoFactorSecret) {
+      return false;
+    }
+
+    // Check if code expired (5 minutes)
+    const codeTimestamp = parseInt(user.twoFactorSecret);
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+    
+    if (now - codeTimestamp > fiveMinutes) {
+      console.log(`⏰ 2FA code expired for user ${userId}`);
+      return false;
+    }
+
+    const isValid = user.twoFactorCode === inputCode;
+    if (isValid) {
+      // Clear used code
+      await db.update(users)
+        .set({ twoFactorCode: null, twoFactorSecret: null })
+        .where(eq(users.id, userId));
+      console.log(`✅ 2FA verification successful for user ${userId}`);
+    } else {
+      console.log(`❌ 2FA verification failed for user ${userId}`);
+    }
+
+    return isValid;
   }
 
   private generateRandomIP(): string {
@@ -116,9 +177,12 @@ export class DatabaseStorage implements IStorage {
     
     const realIp = this.generateRandomIP();
     const { maskedIp, vpnServer } = vpnService.maskIP(realIp);
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
 
     const [user] = await db.insert(users).values({
       ...userData,
+      password: hashedPassword,
       lastActivity: new Date(),
       location: "🏢 Office",
       realIp,
