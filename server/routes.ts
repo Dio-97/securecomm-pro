@@ -789,11 +789,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         switch (message.type) {
           case 'auth':
+            console.log('🔐 Tentativo autenticazione WebSocket:', message.username);
             const user = await storage.getUserByUsername(message.username);
             if (user && user.password === message.password) {
               ws.userId = user.id;
               ws.username = user.username;
               ws.isAdmin = user.isAdmin || false;
+              
+              console.log('✅ Autenticazione WebSocket riuscita:', {
+                userId: ws.userId,
+                username: ws.username
+              });
               
               // Add to connected clients map
               connectedClients.set(user.id, ws);
@@ -809,8 +815,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 } 
               }));
               
-              // Send user's personal conversations only
+              // Send user's personal conversations only - CON LOG DETTAGLIATO
               const personalConversations = await storage.getConversations(user.id);
+              console.log('📋 Conversazioni trovate per utente', user.username, ':', personalConversations.length);
+              if (personalConversations.length > 0) {
+                console.log('📝 Lista conversazioni:', personalConversations.map(c => c.username));
+              }
+              
               ws.send(JSON.stringify({ 
                 type: 'conversations_list', 
                 conversations: personalConversations 
@@ -825,6 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 username: user.username 
               }, ws);
             } else {
+              console.log('❌ Autenticazione WebSocket fallita per:', message.username);
               ws.send(JSON.stringify({ type: 'auth_error' }));
             }
             break;

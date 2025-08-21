@@ -321,8 +321,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
-    // Trova solo gli utenti con cui l'utente corrente ha effettivamente scambiato messaggi
-    // Trova tutti i messaggi dell'utente e identifica gli altri partecipanti
+    console.log('📋 Caricamento conversazioni per utente:', userId);
+    
+    // 1. Ottieni tutte le conversazioni salvate esplicitamente
+    const savedConvs = await db.select({
+      otherUserId: savedConversations.otherUserId,
+      savedAt: savedConversations.createdAt // Usa createdAt invece di savedAt
+    }).from(savedConversations)
+      .where(eq(savedConversations.userId, userId));
+    
+    console.log('💾 Conversazioni salvate trovate:', savedConvs.length);
+    
+    // 2. Trova tutti i messaggi dell'utente e identifica gli altri partecipanti
     const userMessages = await db.select().from(messages).where(
       or(
         eq(messages.userId, userId),
@@ -330,7 +340,7 @@ export class DatabaseStorage implements IStorage {
       )
     );
 
-    // Crea un set degli ID degli altri utenti con cui ha conversato
+    // 3. Crea un set degli ID degli altri utenti (messaggi + conversazioni salvate)
     const otherUserIds = new Set<string>();
     userMessages.forEach(message => {
       if (message.userId === userId) {
@@ -339,15 +349,21 @@ export class DatabaseStorage implements IStorage {
         otherUserIds.add(message.userId);
       }
     });
+    
+    // Aggiungi anche gli utenti dalle conversazioni salvate
+    savedConvs.forEach(conv => otherUserIds.add(conv.otherUserId));
+
+    console.log('👥 Utenti coinvolti totali:', otherUserIds.size);
 
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
-    // Per ogni ID utente trovato, ottieni i dettagli dell'utente e l'ultimo messaggio
+    // 4. Per ogni ID utente trovato, ottieni i dettagli dell'utente e l'ultimo messaggio
     for (const otherUserId of Array.from(otherUserIds)) {
       const otherUser = await this.getUser(otherUserId);
       if (!otherUser) continue;
 
       const conversationState = await this.getUserConversationState(userId, otherUser.id);
+      const savedConv = savedConvs.find(sc => sc.otherUserId === otherUserId);
       
       // Mostra la conversazione solo se non è stata cleared
       const shouldShowMessages = !conversationState?.conversationCleared;
@@ -364,23 +380,30 @@ export class DatabaseStorage implements IStorage {
         lastMessage = message || undefined;
       }
 
-      // Mostra la conversazione solo se ci sono messaggi o se non è stata cleared
-      if (lastMessage || !conversationState?.conversationCleared) {
+      // Includi la conversazione se: ha messaggi O è stata salvata esplicitamente
+      if (lastMessage || savedConv || !conversationState?.conversationCleared) {
         conversations.set(otherUser.id, {
           userId: otherUser.id,
           username: otherUser.username,
           lastMessage: lastMessage,
           unreadCount: 0
         });
+        
+        console.log('✅ Conversazione inclusa:', otherUser.username, savedConv ? '(salvata)' : '(con messaggi)');
       }
     }
 
-    return Array.from(conversations.values()).sort((a, b) => {
-      // Ordina per timestamp dell'ultimo messaggio (più recente prima)
-      const timeA = a.lastMessage?.timestamp ? new Date(a.lastMessage.timestamp).getTime() : 0;
-      const timeB = b.lastMessage?.timestamp ? new Date(b.lastMessage.timestamp).getTime() : 0;
+    const result = Array.from(conversations.values()).sort((a, b) => {
+      // Priorità: conversazioni con messaggi recenti, poi conversazioni salvate
+      const timeA = a.lastMessage?.timestamp ? new Date(a.lastMessage.timestamp).getTime() : 
+                    savedConvs.find(sc => sc.otherUserId === a.userId)?.savedAt.getTime() || 0;
+      const timeB = b.lastMessage?.timestamp ? new Date(b.lastMessage.timestamp).getTime() : 
+                    savedConvs.find(sc => sc.otherUserId === b.userId)?.savedAt.getTime() || 0;
       return timeB - timeA;
     });
+
+    console.log('📋 Conversazioni finali restituite:', result.length);
+    return result;
   }
 
   async clearConversation(userId1: string, userId2: string): Promise<void> {
@@ -393,10 +416,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async saveConversation(userId: string, otherUserId: string): Promise<void> {
-    await db.insert(savedConversations).values({
-      userId,
-      otherUserId,
-    });
+    console.log('💾 SALVATAGGIO CONVERSAZIONE NEL DATABASE:', { userId, otherUserId });
+    
+    try {
+      // Verifica se la conversazione esiste già
+      const existing = await db.select().from(savedConversations).where(
+        and(
+          eq(savedConversations.userId, userId),
+          eq(savedConversations.otherUserId, otherUserId)
+        )
+      );
+
+      if (existing.length === 0) {
+        await db.insert(savedConversations).values({
+          userId,
+          otherUserId
+        });
+        console.log('✅ Nuova conversazione salvata nel database');
+      } else {
+        console.log('📋 Conversazione già esistente nel database');
+      }
+    } catch (error) {
+      console.error('❌ Errore salvataggio conversazione:', error);
+      throw error;
+    }
   }
 
   async removeSavedConversation(userId: string, otherUserId: string): Promise<void> {
