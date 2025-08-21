@@ -330,7 +330,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   return (
     <div className={`min-h-screen flex flex-col messaging-background ${theme === 'dark' ? 'dark' : ''}`}>
       {/* Header */}
-      <header className="bg-card border-b px-4 py-3 flex items-center justify-between">
+      <header className="bg-card border-b-2 border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Avatar 
             className="w-8 h-8 bg-primary cursor-pointer hover:opacity-80 transition-opacity"
