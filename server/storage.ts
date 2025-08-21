@@ -18,6 +18,8 @@ export interface IStorage {
   updateUsername(userId: string, username: string): Promise<boolean>;
   updateUserAvatar(userId: string, avatar: string): Promise<boolean>;
   updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean>;
+  updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
+  updateUserPassword(userId: string, password: string): Promise<boolean>;
   
   // Presence management
   setUserOnline(userId: string): Promise<void>;
@@ -188,8 +190,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUsername(userId: string, username: string): Promise<boolean> {
-    const result = await db.update(users).set({ username }).where(eq(users.id, userId));
-    return result.rowCount! > 0;
+    try {
+      // Impedisci di modificare admin23
+      const user = await this.getUser(userId);
+      if (!user || user.username === "admin23") {
+        return false;
+      }
+
+      // Controlla se l'username esiste già
+      const existingUser = await this.getUserByUsername(username);
+      if (existingUser) {
+        return false;
+      }
+
+      const result = await db.update(users).set({ username }).where(eq(users.id, userId));
+      return result.rowCount! > 0;
+    } catch (error) {
+      console.error('Error updating username:', error);
+      return false;
+    }
   }
 
   async updateUserAvatar(userId: string, avatar: string): Promise<boolean> {
@@ -480,6 +499,38 @@ export class DatabaseStorage implements IStorage {
       );
       
       console.log(`🔥 Messaggi distrutti permanentemente tra ${userId1} e ${userId2}`);
+    }
+  }
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean> {
+    try {
+      // Impedisci di modificare admin23
+      const user = await this.getUser(userId);
+      if (!user || user.username === "admin23") {
+        return false;
+      }
+
+      await db.update(users).set({ isAdmin }).where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      return false;
+    }
+  }
+
+  async updateUserPassword(userId: string, password: string): Promise<boolean> {
+    try {
+      // Impedisci di modificare admin23
+      const user = await this.getUser(userId);
+      if (!user || user.username === "admin23") {
+        return false;
+      }
+
+      await db.update(users).set({ password }).where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error('Error updating password:', error);
+      return false;
     }
   }
 }

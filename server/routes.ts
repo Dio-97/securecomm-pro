@@ -302,6 +302,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user admin status (admin23 only)
+  app.patch('/api/users/:id/admin', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isAdmin } = req.body;
+      
+      await storage.updateUserAdminStatus(id, isAdmin);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      res.status(500).json({ error: 'Failed to update admin status' });
+    }
+  });
+
+  // Update user password (admin23 only)
+  app.patch('/api/users/:id/password', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { password } = req.body;
+      
+      await storage.updateUserPassword(id, password);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      res.status(500).json({ error: 'Failed to update password' });
+    }
+  });
+
+  // Update username (admin23 only)
+  app.patch('/api/users/:id/username', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { username } = req.body;
+      
+      await storage.updateUsername(id, username);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating username:', error);
+      res.status(500).json({ error: 'Username already exists or invalid' });
+    }
+  });
+
   // Get VPN servers status
   app.get("/api/vpn/servers", async (req, res) => {
     try {

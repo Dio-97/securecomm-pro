@@ -233,24 +233,153 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                           </div>
                         </motion.div>
                         
+                        {/* Controlli Admin per admin23 */}
                         <motion.div 
-                          className="flex justify-center"
+                          className="flex flex-col gap-2 mt-4"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 + 0.5 }}
                         >
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewUser(user.username);
-                            }}
-                            className="text-xs"
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Visualizza Conversazioni
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewUser(user.username);
+                              }}
+                              className="text-xs flex-1"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Visualizza
+                            </Button>
+                            
+                            {user.username !== "admin23" && (
+                              <Button
+                                size="sm"
+                                variant={user.isAdmin ? "destructive" : "default"}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const response = await fetch(`/api/users/${user.id}/admin`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ isAdmin: !user.isAdmin })
+                                    });
+                                    
+                                    if (response.ok) {
+                                      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                                      toast({
+                                        title: user.isAdmin ? "❌ Admin rimosso" : "✅ Admin aggiunto",
+                                        description: `${user.name} ${user.isAdmin ? 'non è più' : 'è ora'} un admin`,
+                                      });
+                                    } else {
+                                      toast({
+                                        title: "❌ Errore",
+                                        description: "Impossibile modificare lo status admin",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "❌ Errore di rete",
+                                      description: "Verifica la connessione",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                className="text-xs"
+                              >
+                                <Crown className="w-3 h-3 mr-1" />
+                                {user.isAdmin ? 'Rimuovi' : 'Rendi'} Admin
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {user.username !== "admin23" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newPassword = prompt("Nuova password per " + user.name + ":");
+                                  if (newPassword && newPassword.trim()) {
+                                    try {
+                                      const response = await fetch(`/api/users/${user.id}/password`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ password: newPassword.trim() })
+                                      });
+                                      
+                                      if (response.ok) {
+                                        toast({
+                                          title: "✅ Password aggiornata",
+                                          description: `Password cambiata per ${user.name}`,
+                                        });
+                                      } else {
+                                        toast({
+                                          title: "❌ Errore",
+                                          description: "Impossibile aggiornare la password",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    } catch (error) {
+                                      toast({
+                                        title: "❌ Errore di rete",
+                                        description: "Verifica la connessione",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }
+                                }}
+                                className="text-xs flex-1"
+                              >
+                                🔑 Cambia Password
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newUsername = prompt("Nuovo username per " + user.name + ":", user.username);
+                                  if (newUsername && newUsername.trim() && newUsername !== user.username) {
+                                    try {
+                                      const response = await fetch(`/api/users/${user.id}/username`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ username: newUsername.trim() })
+                                      });
+                                      
+                                      if (response.ok) {
+                                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                                        toast({
+                                          title: "✅ Username aggiornato",
+                                          description: `Username cambiato in ${newUsername}`,
+                                        });
+                                      } else {
+                                        toast({
+                                          title: "❌ Errore",
+                                          description: "Username già esistente o non valido",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    } catch (error) {
+                                      toast({
+                                        title: "❌ Errore di rete",
+                                        description: "Verifica la connessione",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }
+                                }}
+                                className="text-xs flex-1"
+                              >
+                                ✏️ Cambia Username
+                              </Button>
+                            </div>
+                          )}
                         </motion.div>
                       </CardContent>
                     </Card>
@@ -321,7 +450,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-                Modalità solo visualizzazione - Non è possibile modificare o eliminare utenti
+                Admin23 ha controllo completo - Può modificare utenti, password e privilegi admin
               </p>
           </CardContent>
         </Card>
