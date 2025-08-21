@@ -50,6 +50,8 @@ Search restriction: Users cannot search for themselves in user search - applies 
 - **Conversation Caching**: Server maintains real-time cache of user conversations updated via WebSocket on saves and messages
 - **Ultra-Fast Refresh**: Client refreshes conversation list every 500ms for instant message visibility and contact updates (August 21, 2025)
 - **Ephemeral Messaging**: Messages are temporary and automatically cleared when user exits chat, permanently destroyed from server when both users leave (August 21, 2025)
+- **Conversation Reordering**: Fixed automatic conversation reordering by timestamp - conversations now move to top when messages are sent, regardless of cleared status (August 21, 2025)
+- **Clean UI**: Removed message previews from conversation list for cleaner, more secure interface (August 21, 2025)
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging

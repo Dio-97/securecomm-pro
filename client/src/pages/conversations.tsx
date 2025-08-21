@@ -922,11 +922,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                             )}
                           </div>
                         </div>
-                        {conversation.lastMessage && (
-                          <p className="text-sm text-muted-foreground truncate">
-                            {conversation.lastMessage.content}
-                          </p>
-                        )}
+
                         {conversation.unreadCount > 0 && (
                           <div className="flex items-center space-x-2 mt-1">
                             <Badge variant="secondary" className="bg-blue-500 text-white text-xs px-2 py-0.5">
