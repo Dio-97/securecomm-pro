@@ -104,6 +104,28 @@ function AppContent() {
 
   const handleSelectConversation = async (userId: string, username: string) => {
     console.log('💬 Aprendo conversazione con:', username, 'ID:', userId);
+    
+    // Salva SEMPRE la conversazione quando viene aperta (tramite ricerca o lista)
+    if (currentUser) {
+      try {
+        console.log('💾 Salvataggio automatico conversazione:', currentUser.id, '<->', userId);
+        await fetch('/api/conversations/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: currentUser.id, 
+            otherUserId: userId 
+          })
+        });
+        console.log('✅ Conversazione salvata automaticamente');
+        
+        // Aggiorna lista conversazioni
+        handleConversationRemoved();
+      } catch (error) {
+        console.error('❌ Errore salvataggio conversazione:', error);
+      }
+    }
+    
     setCurrentConversation({ userId, username });
     setCurrentScreen("chat");
     if (currentUser) {

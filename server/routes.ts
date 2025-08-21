@@ -169,9 +169,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/conversations/save", async (req, res) => {
     try {
       const { userId, otherUserId } = req.body;
+      console.log('💾 SALVATAGGIO CONVERSAZIONE AUTOMATICO:', {
+        userId,
+        otherUserId,
+        timestamp: new Date().toISOString()
+      });
+      
       await storage.saveConversation(userId, otherUserId);
+      console.log('✅ Conversazione salvata con successo nel database');
       res.json({ success: true });
     } catch (error) {
+      console.error('❌ Errore salvataggio conversazione:', error);
       res.status(500).json({ message: "Failed to save conversation" });
     }
   });

@@ -6,6 +6,7 @@ This is a real-time chat application built with React and Node.js, featuring sec
 
 Preferred communication style: Simple, everyday language.
 Language: Italian (primary communication)
+Auto-save conversations: All chat conversations opened through search are automatically saved for all users
 
 # System Architecture
 

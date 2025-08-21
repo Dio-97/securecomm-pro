@@ -354,22 +354,9 @@ export default function Conversations({ user, conversations, onSelectConversatio
   }, [searchQuery, searchResults, searchLoading, searchError]);
 
   const handleStartConversation = async (userId: string, username: string) => {
-    // Always save the conversation when clicking on a user to make it persistent
-    try {
-      await fetch('/api/conversations/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, otherUserId: userId })
-      });
-      
-      // Trigger a refresh of the conversations list to show the new conversation immediately
-      if (onConversationRemoved) {
-        onConversationRemoved(); // This callback will refresh the parent component's conversations
-      }
-    } catch (error) {
-      console.error('Failed to save conversation:', error);
-    }
+    console.log('🔍 Avvio conversazione da ricerca:', username, 'ID:', userId);
     
+    // Il salvataggio è ora gestito automaticamente in handleSelectConversation
     // Clear search and navigate to conversation
     setShowSearch(false);
     setSearchQuery("");
@@ -981,7 +968,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                                 : 'Offline'
                               }
                             </span>
-                            {conversation.lastMessage && (
+                            {conversation.lastMessage && conversation.lastMessage.timestamp && (
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(conversation.lastMessage.timestamp), 'HH:mm')}
                               </span>
@@ -1006,7 +993,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleRemoveConversation(conversation.userId);
+                          handleRemoveConversation(conversation.userId, e);
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                         title="Rimuovi conversazione"
