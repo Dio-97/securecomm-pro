@@ -46,7 +46,6 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
   const [newMessageConversations, setNewMessageConversations] = useState<Set<string>>(new Set());
   const [previousConversations, setPreviousConversations] = useState<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>([]);
-  const [lastSentMessageConversation, setLastSentMessageConversation] = useState<string | null>(null);
 
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
@@ -384,12 +383,19 @@ export default function Conversations({ user, conversations, onSelectConversatio
       }
     });
 
-    // Includi anche la conversazione per cui è stato inviato un messaggio
-    if (lastSentMessageConversation) {
-      newMessageIds.add(lastSentMessageConversation);
-      console.log('📤 Messaggio inviato dall\'utente per:', lastSentMessageConversation);
-      setLastSentMessageConversation(null); // Reset dopo l'utilizzo
-    }
+      // Rileva messaggi inviati dall'utente corrente controllando i timestamp recenti
+    conversations.forEach((current) => {
+      if (current.lastMessage && current.lastMessage.userId === user.id) {
+        const messageTime = new Date(current.lastMessage.timestamp || 0).getTime();
+        const now = Date.now();
+        
+        // Se il messaggio è stato inviato negli ultimi 3 secondi, attiva l'animazione
+        if (now - messageTime < 3000) {
+          newMessageIds.add(current.userId);
+          console.log('📤 Messaggio inviato dall\'utente rilevato per:', current.username);
+        }
+      }
+    });
 
     // Aggiorna lo stato dei nuovi messaggi
     if (newMessageIds.size > 0) {
@@ -403,22 +409,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
     // Aggiorna le conversazioni precedenti
     setPreviousConversations([...conversations]);
-  }, [conversations, lastSentMessageConversation]);
-
-  // Funzione per notificare quando l'utente invia un messaggio
-  const triggerMessageSentAnimation = (targetUserId: string) => {
-    setLastSentMessageConversation(targetUserId);
-    console.log('🎯 Trigger animazione per messaggio inviato a:', targetUserId);
-  };
-
-  // Esponi la funzione al componente padre tramite useEffect
-  useEffect(() => {
-    if (onMessageSent) {
-      // Sostituisci la funzione onMessageSent con la nostra versione che attiva l'animazione
-      const originalOnMessageSent = onMessageSent;
-      (window as any).triggerMessageSentAnimation = triggerMessageSentAnimation;
-    }
-  }, [onMessageSent]);
+  }, [conversations, user?.id]);
 
   const handleStartConversation = async (userId: string, username: string) => {
     console.log('🔍 Avvio conversazione da ricerca:', username, 'ID:', userId);
