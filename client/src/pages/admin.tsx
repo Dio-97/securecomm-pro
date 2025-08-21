@@ -254,24 +254,34 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                     initial={{ opacity: 0, scale: 0.8, y: 20 }}
                     animate={{ 
                       opacity: isDeleting ? 0 : 1, 
-                      scale: isDeleting ? 0.3 : 1, 
-                      y: isDeleting ? -100 : 0,
-                      rotateX: isDeleting ? 90 : 0
+                      scale: isDeleting ? 0.2 : 1, 
+                      y: isDeleting ? -200 : 0,
+                      rotateX: isDeleting ? 180 : 0,
+                      filter: isDeleting ? "blur(10px)" : "blur(0px)"
                     }}
                     exit={{ 
                       opacity: 0, 
-                      scale: 0.3, 
-                      y: -100,
-                      rotateX: 90,
-                      transition: { duration: 0.6, ease: "easeInOut" }
+                      scale: 0.1, 
+                      y: -300,
+                      rotateX: 270,
+                      filter: "blur(20px)",
+                      transition: { 
+                        duration: 0.8, 
+                        ease: "easeIn",
+                        type: "tween"
+                      }
                     }}
                     transition={{ 
-                      duration: isDeleting ? 0.6 : 0.4,
+                      duration: isDeleting ? 0.8 : 0.4,
                       delay: isDeleting ? 0 : index * 0.1,
-                      ease: isDeleting ? "easeInOut" : "easeOut"
+                      ease: isDeleting ? "easeIn" : "easeOut",
+                      type: isDeleting ? "tween" : "spring"
                     }}
-                    whileHover={{ scale: isDeleting ? 0.3 : 1.02 }}
-                    whileTap={{ scale: isDeleting ? 0.3 : 0.98 }}
+                    whileHover={{ scale: isDeleting ? 0.2 : 1.02 }}
+                    whileTap={{ scale: isDeleting ? 0.2 : 0.98 }}
+                    style={{
+                      transformPerspective: "1000px"
+                    }}
                   >
                     <Card className="hover:shadow-md transition-shadow h-full">
                       <CardContent className="p-6 flex flex-col h-full">
