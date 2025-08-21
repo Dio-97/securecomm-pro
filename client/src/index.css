@@ -43,6 +43,90 @@
   animation: fadeOut 1.5s ease-out forwards;
 }
 
+/* Animazioni per riordinamento conversazioni */
+@keyframes slideInFromTop {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideToPosition {
+  0% {
+    transform: translateY(var(--initial-y, 0));
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.95) translateY(-5px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.02) translateY(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Classe per conversazioni animate */
+.conversation-item {
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+
+.conversation-item.animate-reorder {
+  animation: slideToPosition 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.conversation-item.animate-new {
+  animation: bounceIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.conversation-item.animate-priority {
+  animation: slideInFromTop 0.3s cubic-bezier(0.4, 0, 0.2, 1), pulse 2s infinite;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Effetto pulsante per nuovi messaggi */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 6px 25px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Animazione veloce per riordinamento */
+@keyframes quickSlide {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.conversation-item.animate-reorder {
+  animation: quickSlide 0.3s ease-out;
+}
+
 /* Diagonal Grayscale Background */
 .messaging-background {
   background: linear-gradient(
