@@ -962,10 +962,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
                 onClick={() => {
                   window.location.hash = '#admin';
                 }}
-                className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 px-2 py-1 h-auto scale-75"
               >
-                <Crown className="w-3 h-3 mr-1" />
-                Passa ad Admin
+                <Crown className="w-2.5 h-2.5 mr-1" />
+                <span className="text-xs">Passa ad Admin</span>
               </Button>
             )}
             <div className="text-xs text-muted-foreground">
