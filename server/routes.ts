@@ -912,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'auth':
             console.log('🔐 Tentativo autenticazione WebSocket:', message.username);
             const user = await storage.getUserByUsername(message.username);
-            if (user && user.password === message.password) {
+            if (user && await bcrypt.compare(message.password, user.password)) {
               ws.userId = user.id;
               ws.username = user.username;
               ws.isAdmin = user.isAdmin || false;
