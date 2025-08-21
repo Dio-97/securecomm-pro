@@ -44,8 +44,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
-  const [newMessageConversations, setNewMessageConversations] = useState<Set<string>>(new Set());
-  const [previousConversations, setPreviousConversations] = useState<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>>([]);
+
 
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showUsernameEdit, setShowUsernameEdit] = useState(false);
@@ -354,64 +353,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
     }
   }, [searchQuery, searchResults, searchLoading, searchError]);
 
-  // Rilevamento nuovi messaggi per animazioni
+  // Debug log conversazioni
   useEffect(() => {
-    if (!conversations || !Array.isArray(conversations) || conversations.length === 0) {
-      setPreviousConversations([]);
-      return;
-    }
-
-    // Confronta con le conversazioni precedenti per rilevare nuovi messaggi
-    const newMessageIds = new Set<string>();
-    
-    conversations.forEach((current) => {
-      const previous = previousConversations.find(p => p.userId === current.userId);
-      
-      // Se la conversazione ha un nuovo messaggio o timestamp più recente
-      if (previous && current.lastMessage && previous.lastMessage) {
-        const currentTime = new Date(current.lastMessage.timestamp || 0).getTime();
-        const previousTime = new Date(previous.lastMessage.timestamp || 0).getTime();
-        
-        if (currentTime > previousTime) {
-          newMessageIds.add(current.userId);
-          console.log('🆕 Nuovo messaggio rilevato per:', current.username);
-        }
-      } else if (current.lastMessage && !previous?.lastMessage) {
-        // Prima volta che la conversazione ha un messaggio
-        newMessageIds.add(current.userId);
-        console.log('🎯 Primo messaggio rilevato per:', current.username);
-      }
-    });
-
-      // Rileva nuovi messaggi confrontando con la lista precedente
-    conversations.forEach((current, currentIndex) => {
-      const prevIndex = previousConversations.findIndex(prev => prev.userId === current.userId);
-      
-      if (prevIndex === -1) {
-        // Nuova conversazione
-        newMessageIds.add(current.userId);
-        console.log('🆕 Nuova conversazione rilevata per:', current.username);
-      } else if (prevIndex !== currentIndex || 
-                 (current.lastMessage && previousConversations[prevIndex]?.lastMessage?.id !== current.lastMessage.id)) {
-        // Conversazione cambiata posizione o nuovo messaggio
-        newMessageIds.add(current.userId);
-        console.log('📬 Nuovo messaggio o cambio posizione per:', current.username);
-      }
-    });
-
-    // Aggiorna lo stato dei nuovi messaggi
-    if (newMessageIds.size > 0) {
-      setNewMessageConversations(newMessageIds);
-      
-      // Rimuovi l'evidenziazione dopo 2 secondi
-      setTimeout(() => {
-        setNewMessageConversations(new Set());
-      }, 2000);
-    }
-
-    // Aggiorna le conversazioni precedenti
-    setPreviousConversations([...conversations]);
-  }, [conversations, user?.id]);
+    console.log('📋 Conversazioni aggiornate:', conversations?.length || 0);
+  }, [conversations]);
 
   const handleStartConversation = async (userId: string, username: string) => {
     console.log('🔍 Avvio conversazione da ricerca:', username, 'ID:', userId);
@@ -921,28 +866,10 @@ export default function Conversations({ user, conversations, onSelectConversatio
           ) : (
             <div className="space-y-2">
               {Array.isArray(conversations) && conversations.map((conversation, index) => {
-                const hasNewMessage = newMessageConversations.has(conversation.userId);
-                const isFirstPosition = index === 0;
-                
                 return (
                   <Card 
                     key={`conversation-${conversation.userId}`}
-                    className={`cursor-pointer hover:shadow-sm transition-all duration-500 ease-in-out relative group conversation-item ${
-                      hasNewMessage 
-                        ? isFirstPosition 
-                          ? 'animate-priority ring-2 ring-blue-400 dark:ring-blue-600' 
-                          : 'animate-new ring-2 ring-green-400 dark:ring-green-600'
-                        : 'animate-in slide-in-from-right-2'
-                    }`}
-                    style={{
-                      animationDelay: hasNewMessage ? '0ms' : `${index * 50}ms`,
-                      transform: 'translateY(0)',
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      ...(hasNewMessage && {
-                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%)',
-                        borderColor: isFirstPosition ? 'rgb(59, 130, 246)' : 'rgb(34, 197, 94)'
-                      })
-                    }}
+                    className="cursor-pointer hover:shadow-sm transition-shadow duration-200"
                     onClick={() => onSelectConversation(conversation.userId, conversation.username)}
                 >
                   <CardContent className="p-4">
