@@ -638,28 +638,17 @@ export default function Conversations({ user, conversations, onSelectConversatio
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           {isGodMode && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCredentialsEdit(true)}
-                className="text-xs border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950"
-              >
-                <Edit3 className="w-3 h-3 mr-1" />
-                Credenziali
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExitGodMode}
-                className="text-xs border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-              >
-                <X className="w-3 h-3 mr-1" />
-                Esci
-              </Button>
-            </>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCredentialsEdit(true)}
+              className="text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950 px-2"
+              title="Modifica credenziali utente"
+            >
+              <Edit3 className="w-4 h-4" />
+            </Button>
           )}
           
           <Button 
