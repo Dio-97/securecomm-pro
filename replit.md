@@ -52,6 +52,7 @@ Search restriction: Users cannot search for themselves in user search - applies 
 - **Ephemeral Messaging**: Messages are temporary and automatically cleared when user exits chat, permanently destroyed from server when both users leave (August 21, 2025)
 - **Conversation Reordering**: Fixed automatic conversation reordering by timestamp - conversations now move to top when messages are sent, regardless of cleared status (August 21, 2025)
 - **Clean UI**: Removed message previews from conversation list for cleaner, more secure interface (August 21, 2025)
+- **WhatsApp-style Unread Counter**: Added red circular badge with white text showing unread message count, positioned on the right side of conversations (August 21, 2025)
 
 ## Real-Time Communication
 - **WebSocket Server**: Dedicated WebSocket server on `/ws` path for real-time messaging

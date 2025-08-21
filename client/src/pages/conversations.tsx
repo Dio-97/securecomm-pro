@@ -910,26 +910,22 @@ export default function Conversations({ user, conversations, onSelectConversatio
                                   : 'Offline'
                                 }
                               </span>
-                              {/* Pallino blu per messaggi non letti */}
-                              {conversation.unreadCount > 0 && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                              )}
                             </div>
                             {conversation.lastMessage && conversation.lastMessage.timestamp && (
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(conversation.lastMessage.timestamp), 'HH:mm')}
                               </span>
                             )}
+                            {/* Contatore messaggi non letti stile WhatsApp */}
+                            {conversation.unreadCount > 0 && (
+                              <div className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex-shrink-0 min-w-[20px]">
+                                {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {conversation.unreadCount > 0 && (
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="secondary" className="bg-blue-500 text-white text-xs px-2 py-0.5">
-                              {conversation.unreadCount} nuovo{conversation.unreadCount !== 1 ? 'i' : ''}
-                            </Badge>
-                          </div>
-                        )}
+
                       </div>
                       <Button
                         variant="ghost"
