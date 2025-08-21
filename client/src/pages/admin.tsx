@@ -273,8 +273,8 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                     whileHover={{ scale: isDeleting ? 0.3 : 1.02 }}
                     whileTap={{ scale: isDeleting ? 0.3 : 0.98 }}
                   >
-                    <Card className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
+                    <Card className="hover:shadow-md transition-shadow h-full">
+                      <CardContent className="p-6 flex flex-col h-full">
                         <motion.div 
                           className="flex items-center space-x-4 mb-4"
                           initial={{ opacity: 0, x: -20 }}
@@ -339,113 +339,15 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                           </div>
                         </motion.div>
                         
-                        {/* Controlli Admin per admin23 */}
-                        <motion.div 
-                          className="flex flex-col gap-2 mt-4"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 + 0.5 }}
-                        >
-                          <div className="flex gap-2 justify-center">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onViewUser(user.username);
-                              }}
-                              className="text-xs px-4 py-2 h-9 min-w-[120px]"
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Visualizza
-                            </Button>
-                            
-                            {user.username !== "admin23" && (
-                              <>
-                                {showDeleteConfirm === user.id ? (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteUser(user.id, user.name);
-                                      }}
-                                      className="text-xs px-2 h-7"
-                                      disabled={isDeleting}
-                                    >
-                                      <Check className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowDeleteConfirm(null);
-                                      }}
-                                      className="text-xs px-2 h-7"
-                                    >
-                                      <XCircle className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowDeleteConfirm(user.id);
-                                    }}
-                                    className="text-xs px-3 py-2 h-9"
-                                    disabled={isDeleting}
-                                  >
-                                    <X className={`w-3 h-3 ${isDeleting ? 'animate-spin' : ''}`} />
-                                  </Button>
-                                )}
-                                
-                                <Button
-                                  size="sm"
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    try {
-                                      const response = await fetch(`/api/users/${user.id}/admin`, {
-                                        method: 'PATCH',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ isAdmin: !user.isAdmin })
-                                      });
-                                      
-                                      if (response.ok) {
-                                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                                        toast({
-                                          title: user.isAdmin ? "❌ Admin rimosso" : "✅ Admin aggiunto",
-                                          description: `${user.name} ${user.isAdmin ? 'non è più' : 'è ora'} un admin`,
-                                        });
-                                      } else {
-                                        toast({
-                                          title: "❌ Errore",
-                                          description: "Impossibile modificare lo status admin",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    } catch (error) {
-                                      toast({
-                                        title: "❌ Errore di rete",
-                                        description: "Verifica la connessione",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                  className="text-xs px-4 py-2 h-9 min-w-[120px] bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
-                                >
-                                  <Crown className="w-3 h-3 mr-1" />
-                                  {user.isAdmin ? 'Rimuovi' : 'Rendi'} Admin
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                          
-                          {user.username !== "admin23" && (
-                            <div className="space-y-2">
+                        {/* Sezione Username e Password - Centrata */}
+                        {user.username !== "admin23" && (
+                          <motion.div 
+                            className="flex justify-center my-4"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 + 0.4 }}
+                          >
+                            <div className="space-y-2 w-full max-w-xs">
                               {/* Edit Username */}
                               <div className="flex gap-2 items-center">
                                 <span className="text-xs text-muted-foreground w-16">Username:</span>
@@ -522,6 +424,110 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions, current
                                 )}
                               </div>
                             </div>
+                          </motion.div>
+                        )}
+                        
+                        {/* Controlli Admin - Pulsanti in basso */}
+                        <motion.div 
+                          className="flex gap-2 justify-center mt-auto"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 + 0.5 }}
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewUser(user.username);
+                            }}
+                            className="text-xs px-4 py-2 h-9 min-w-[120px]"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Visualizza
+                          </Button>
+                          
+                          {user.username !== "admin23" && (
+                            <>
+                              {showDeleteConfirm === user.id ? (
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteUser(user.id, user.name);
+                                    }}
+                                    className="text-xs px-2 h-7"
+                                    disabled={isDeleting}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowDeleteConfirm(null);
+                                    }}
+                                    className="text-xs px-2 h-7"
+                                  >
+                                    <XCircle className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowDeleteConfirm(user.id);
+                                  }}
+                                  className="text-xs px-3 py-2 h-9"
+                                  disabled={isDeleting}
+                                >
+                                  <X className={`w-3 h-3 ${isDeleting ? 'animate-spin' : ''}`} />
+                                </Button>
+                              )}
+                              
+                              <Button
+                                size="sm"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const response = await fetch(`/api/users/${user.id}/admin`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ isAdmin: !user.isAdmin })
+                                    });
+                                    
+                                    if (response.ok) {
+                                      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                                      toast({
+                                        title: user.isAdmin ? "❌ Admin rimosso" : "✅ Admin aggiunto",
+                                        description: `${user.name} ${user.isAdmin ? 'non è più' : 'è ora'} un admin`,
+                                      });
+                                    } else {
+                                      toast({
+                                        title: "❌ Errore",
+                                        description: "Impossibile modificare lo status admin",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "❌ Errore di rete",
+                                      description: "Verifica la connessione",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                className="text-xs px-4 py-2 h-9 min-w-[120px] bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                              >
+                                <Crown className="w-3 h-3 mr-1" />
+                                {user.isAdmin ? 'Rimuovi' : 'Rendi'} Admin
+                              </Button>
+                            </>
                           )}
                         </motion.div>
                       </CardContent>
