@@ -61,6 +61,7 @@ export function useWebSocket() {
           break;
           
         case 'message_history':
+          console.log('📥 Cronologia messaggi ricevuta:', message.messages.length);
           setMessages(message.messages);
           break;
           
@@ -121,15 +122,21 @@ export function useWebSocket() {
 
   const sendMessage = (content: string, recipientId: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
-      console.log('🚀 Invio messaggio:', { content: content.substring(0, 50) + '...', recipientId });
-      console.log('📡 WebSocket stato:', ws.current.readyState === WebSocket.OPEN ? 'APERTO' : 'CHIUSO');
+      console.log('🚀 WEBSOCKET - Invio messaggio:', { 
+        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        recipientId,
+        connectionState: 'CONNESSO'
+      });
+      
       ws.current.send(JSON.stringify({ 
         type: 'send_message', 
         content,
         recipientId 
       }));
+      
+      console.log('✅ Messaggio inviato al server WebSocket');
     } else {
-      console.error('❌ Impossibile inviare messaggio - WebSocket non connesso');
+      console.error('❌ ERRORE - WebSocket non connesso, stato:', ws.current?.readyState);
     }
   };
 

@@ -84,8 +84,16 @@ export default function Chat({
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
     
+    console.log('🚀 INVIO MESSAGGIO CLIENT:', {
+      messaggio: newMessage,
+      mittente: user.username,
+      destinatario: recipientUsername,
+      isAdmin23Chat
+    });
+    
     // Admin23 chat è esente dalla verifica QR - invia direttamente
     if (isAdmin23Chat) {
+      console.log('✅ Admin23 chat - Invio diretto senza verifica QR');
       onSendMessage(newMessage, recipientId);
       setNewMessage("");
       setIsFirstMessage(false);
@@ -99,12 +107,14 @@ export default function Chat({
     
     // Check if this is the first message and conversation needs verification
     if (isFirstMessage && !isConversationVerified) {
+      console.log('🔒 Primo messaggio - Richiesta verifica QR');
       setQRPurpose('message');
       setQRMode('scan');
       setShowChatVerificationConfirm(true);
       return;
     }
     
+    console.log('📤 Invio messaggio normale');
     onSendMessage(newMessage, recipientId);
     setNewMessage("");
     setIsFirstMessage(false);

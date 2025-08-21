@@ -102,6 +102,22 @@ function AppContent() {
     setCurrentConversation(null);
   };
 
+  const handleSendMessage = (content: string, recipientId: string) => {
+    console.log('📡 APP - Invio messaggio:', {
+      contenuto: content,
+      mittente: currentUser?.username,
+      destinatario: recipientId
+    });
+    
+    if (!currentUser) {
+      console.error('❌ Utente non autenticato');
+      return;
+    }
+
+    // Usa la funzione sendMessage dal hook WebSocket
+    sendMessage(content, recipientId);
+  };
+
   const handleSelectConversation = async (userId: string, username: string) => {
     console.log('💬 Aprendo conversazione con:', username, 'ID:', userId);
     
@@ -207,7 +223,7 @@ function AppContent() {
           messages={messages}
           recipientId={currentConversation.userId}
           recipientUsername={currentConversation.username}
-          onSendMessage={sendMessage}
+          onSendMessage={handleSendMessage}
           getUserPresenceStatus={getUserPresenceStatus}
           onBack={handleBackToConversations}
           onLogout={handleLogout}
