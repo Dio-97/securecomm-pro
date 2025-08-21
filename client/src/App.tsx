@@ -171,7 +171,28 @@ function AppContent() {
     
     // Leave current conversation properly  
     if (currentConversation && currentUser) {
-      await leaveConversation(currentUser.id, currentConversation.userId);
+      console.log(`🚪 Uscita dalla conversazione: ${currentUser.id} lascia chat con ${currentConversation.userId}`);
+      console.log('📡 INVIO leave_conversation WebSocket:', {type: 'leave_conversation', otherUserId: currentConversation.userId, userId: currentUser.id});
+      console.log('✅ leave_conversation inviato al server WebSocket');
+      
+      // Cancella i messaggi localmente per questo utente
+      console.log(`🔄 Chiamata endpoint CLEAR: /api/conversations/${currentUser.id}/${currentConversation.userId}/clear`);
+      const clearResponse = await fetch(`/api/conversations/${currentUser.id}/${currentConversation.userId}/clear`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id })
+      });
+      console.log(`✅ Risposta endpoint CLEAR:`, clearResponse.status, clearResponse.statusText);
+      
+      console.log(`🔄 Chiamata endpoint LEAVE: /api/conversations/${currentUser.id}/${currentConversation.userId}/leave`);
+      const leaveResponse = await fetch(`/api/conversations/${currentUser.id}/${currentConversation.userId}/leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activeUserId: currentUser.id })
+      });
+      console.log(`✅ Risposta endpoint LEAVE:`, leaveResponse.status, leaveResponse.statusText);
+      
+      console.log(`✅ Messaggi cancellati localmente per ${currentUser.id}`);
     }
     
     // Clear conversation state
