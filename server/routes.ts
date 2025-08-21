@@ -581,6 +581,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin update user credentials endpoint
+  app.put("/api/admin/update-credentials", async (req, res) => {
+    try {
+      const { targetUsername, newUsername, newPassword } = req.body;
+      
+      if (!targetUsername) {
+        return res.status(400).json({ error: "Target username is required" });
+      }
+      
+      if (!newUsername && !newPassword) {
+        return res.status(400).json({ error: "At least one field (username or password) must be provided" });
+      }
+      
+      // Find target user
+      const targetUser = await storage.getUserByUsername(targetUsername);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      if (targetUser.isAdmin) {
+        return res.status(403).json({ error: "Cannot modify admin credentials" });
+      }
+      
+      // Update credentials
+      const result = await storage.updateUserCredentials(targetUser.id, { 
+        username: newUsername,
+        password: newPassword 
+      });
+      
+      if (result) {
+        res.json({ 
+          success: true, 
+          message: `Credentials updated for ${targetUsername}`,
+          newUsername: newUsername || targetUsername
+        });
+      } else {
+        res.status(500).json({ error: "Failed to update credentials" });
+      }
+    } catch (error) {
+      console.error("Error updating user credentials:", error);
+      res.status(500).json({ error: "Failed to update credentials" });
+    }
+  });
+
   // WebSocket connection handling
   // Send presence updates to all clients
   const broadcastPresenceUpdate = (userId: string, status: 'online' | 'offline') => {

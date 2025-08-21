@@ -55,6 +55,9 @@ export default function Conversations({ user, conversations, onSelectConversatio
   const [newUsername, setNewUsername] = useState(user.username);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [showCredentialsEdit, setShowCredentialsEdit] = useState(false);
+  const [newUsernameForEdit, setNewUsernameForEdit] = useState("");
+  const [newPasswordForEdit, setNewPasswordForEdit] = useState("");
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
 
@@ -513,6 +516,54 @@ export default function Conversations({ user, conversations, onSelectConversatio
     }
   };
 
+  const handleCredentialsSubmit = async () => {
+    if (!isGodMode || !godModeTarget) return;
+    
+    if (!newUsernameForEdit.trim() && !newPasswordForEdit.trim()) {
+      toast({
+        title: "Errore",
+        description: "Inserisci almeno un campo da modificare",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/admin/update-credentials', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          targetUsername: godModeTarget,
+          newUsername: newUsernameForEdit.trim() || undefined,
+          newPassword: newPasswordForEdit.trim() || undefined
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        toast({
+          title: "Successo",
+          description: `Credenziali di @${godModeTarget} aggiornate`,
+        });
+        setShowCredentialsEdit(false);
+        setNewUsernameForEdit("");
+        setNewPasswordForEdit("");
+      } else {
+        toast({
+          title: "Errore",
+          description: data.message || "Errore durante l'aggiornamento",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Errore", 
+        description: "Errore di connessione",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className={`min-h-screen flex flex-col messaging-background ${theme === 'dark' ? 'dark' : ''}`}>
       {/* God Mode Banner */}
@@ -589,15 +640,26 @@ export default function Conversations({ user, conversations, onSelectConversatio
         
         <div className="flex items-center space-x-3">
           {isGodMode && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExitGodMode}
-              className="text-xs border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <X className="w-3 h-3 mr-1" />
-              Esci
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCredentialsEdit(true)}
+                className="text-xs border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950"
+              >
+                <Edit3 className="w-3 h-3 mr-1" />
+                Credenziali
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExitGodMode}
+                className="text-xs border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Esci
+              </Button>
+            </>
           )}
           
           <Button 
@@ -1018,6 +1080,71 @@ export default function Conversations({ user, conversations, onSelectConversatio
                 onClick={() => {
                   setNewUsername(user.username);
                   setShowUsernameEdit(false);
+                }}
+                className="flex-1"
+              >
+                Annulla
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credentials Edit Modal (God Mode) */}
+      <Dialog open={showCredentialsEdit} onOpenChange={setShowCredentialsEdit}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Crown className="w-5 h-5 text-red-500" />
+              <span>Modifica Credenziali - @{godModeTarget}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 dark:bg-red-950 p-3 rounded-lg border border-red-200 dark:border-red-800">
+              <p className="text-sm text-red-700 dark:text-red-300 flex items-center">
+                <Crown className="w-4 h-4 mr-2" />
+                Modalità Admin - Modifica credenziali utente
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="new-username-edit">Nuovo nome utente (opzionale)</Label>
+              <Input
+                id="new-username-edit"
+                value={newUsernameForEdit}
+                onChange={(e) => setNewUsernameForEdit(e.target.value)}
+                placeholder="Lascia vuoto per non modificare"
+                minLength={3}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="new-password-edit">Nuova password (opzionale)</Label>
+              <Input
+                id="new-password-edit"
+                type="password"
+                value={newPasswordForEdit}
+                onChange={(e) => setNewPasswordForEdit(e.target.value)}
+                placeholder="Lascia vuoto per non modificare"
+                minLength={6}
+              />
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleCredentialsSubmit}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={!newUsernameForEdit.trim() && !newPasswordForEdit.trim()}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Aggiorna Credenziali
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setNewUsernameForEdit("");
+                  setNewPasswordForEdit("");
+                  setShowCredentialsEdit(false);
                 }}
                 className="flex-1"
               >

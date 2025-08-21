@@ -14,6 +14,7 @@ export interface IStorage {
   rotateUserVPN(userId: string): Promise<User | undefined>;
   updateUsername(userId: string, username: string): Promise<boolean>;
   updateUserAvatar(userId: string, avatar: string): Promise<boolean>;
+  updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean>;
   
   // Presence management
   setUserOnline(userId: string): Promise<void>;
@@ -545,6 +546,28 @@ export class MemStorage implements IStorage {
       this.users.set(userId, user);
       
       console.log(`Avatar updated for user ${userId}. Old avatar ${oldAvatar ? 'removed' : 'was null'}, new avatar set.`);
+      return true;
+    }
+    return false;
+  }
+
+  async updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (user && !user.isAdmin) {
+      if (credentials.username) {
+        // Check if username already exists
+        const existingUser = Array.from(this.users.values()).find(u => u.username === credentials.username && u.id !== userId);
+        if (existingUser) {
+          return false; // Username already taken
+        }
+        user.username = credentials.username;
+      }
+      
+      if (credentials.password) {
+        user.password = credentials.password;
+      }
+      
+      this.users.set(userId, user);
       return true;
     }
     return false;
