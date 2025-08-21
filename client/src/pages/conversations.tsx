@@ -416,8 +416,16 @@ export default function Conversations({ user, conversations, onSelectConversatio
             <Shield className="w-4 h-4" />
           </Button>
           
-          <Button variant="ghost" size="sm" onClick={toggleTheme}>
-            {theme === 'dark' ? "☀️" : "🌙"}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={toggleTheme}
+            className="transition-all duration-300 hover:scale-110 hover:rotate-12"
+            title={`Passa al tema ${theme === 'dark' ? 'chiaro' : 'scuro'}`}
+          >
+            <span className="transition-transform duration-300 hover:scale-125">
+              {theme === 'dark' ? "☀️" : "🌙"}
+            </span>
           </Button>
           
           <Button variant="ghost" size="sm" onClick={onLogout}>
