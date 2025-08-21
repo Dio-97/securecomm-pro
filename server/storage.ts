@@ -1,7 +1,7 @@
 import { type User, type Message, type InsertUser, type Invitation, type SavedConversation, type SharedFile, type CryptoSession, type ConversationState, type InsertConversationState } from "@shared/schema";
 import { users, messages, invitations, savedConversations, sharedFiles, cryptoSessions, conversationStates } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { vpnService } from "./vpn-service";
 import bcrypt from "bcrypt";
@@ -384,7 +384,7 @@ export class DatabaseStorage implements IStorage {
         and(eq(messages.userId, userId1), eq(messages.recipientId, userId2)),
         and(eq(messages.userId, userId2), eq(messages.recipientId, userId1))
       )
-    ).orderBy(desc(messages.timestamp));
+    ).orderBy(asc(messages.timestamp));
   }
 
   async getConversations(userId: string): Promise<Array<{ userId: string; username: string; lastMessage?: Message; unreadCount: number }>> {
