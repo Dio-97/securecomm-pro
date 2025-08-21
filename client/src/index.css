@@ -4,6 +4,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent memory leaks from CSS animations */
+* {
+  will-change: auto;
+}
+
+/* Optimize WebSocket reconnection animations */
+.websocket-connecting {
+  animation: pulse 2s infinite;
+}
+
+/* Smooth theme transitions without layout shifts */
+.theme-transition {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 /* Force search results to appear above everything */
 .search-results-overlay {
   position: fixed !important;

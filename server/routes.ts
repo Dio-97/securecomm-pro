@@ -764,8 +764,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // WebSocket connection handling
+  const MAX_CONNECTIONS = 20;
+  const CLEANUP_INTERVAL = 30000; // 30 seconds
+  
   // Cache delle conversazioni per ogni utente  
   const userConversationsCache = new Map<string, Array<{ userId: string; username: string; lastMessage?: any; unreadCount: number }>>();
+  
+  // Periodic cleanup of inactive connections
+  setInterval(() => {
+    const before = connectedClients.size;
+    connectedClients.forEach((client, userId) => {
+      if (client.readyState === WebSocket.CLOSED) {
+        console.log('🧹 Rimozione connessione chiusa per utente:', userId);
+        connectedClients.delete(userId);
+      }
+    });
+    if (before !== connectedClients.size) {
+      console.log('🔧 Cleanup completato, connessioni attive:', connectedClients.size, '/', MAX_CONNECTIONS);
+    }
+  }, CLEANUP_INTERVAL);
 
   // Aggiorna la cache delle conversazioni per un utente specifico
   const updateUserConversationsCache = async (userId: string) => {

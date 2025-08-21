@@ -89,9 +89,12 @@ export default function Chat({
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.id?.startsWith('temp-') || lastMessage.id?.startsWith('local-')) {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 50);
+        
+        // Cleanup timeout to prevent memory leaks
+        return () => clearTimeout(timeoutId);
       }
     }
   }, [messages]);
@@ -358,8 +361,8 @@ export default function Chat({
           // I messaggi dell'utente corrente vanno a destra, quelli ricevuti a sinistra
           const isOwnMessage = message.userId === user.id || 
                                (message.username === user.username) ||
-                               (message.id?.startsWith('temp-') && !message.userId) ||
-                               (message.id?.startsWith('local-') && !message.userId);
+                               (message.id?.startsWith('temp-')) ||
+                               (message.id?.startsWith('local-'));
           
           return (
             <MessageBubble

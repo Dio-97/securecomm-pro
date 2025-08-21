@@ -38,19 +38,38 @@ export function useWebSocket() {
     }
   };
 
-  // Auto-refresh continuo delle conversazioni - ogni 500ms per aggiornamenti istantanei
+  // Auto-refresh ottimizzato delle conversazioni
   useEffect(() => {
     if (!user?.id) return;
     
     // Refresh immediato quando l'utente si logga
     refreshConversations();
     
-    // Refresh molto frequente per vedere subito nuovi messaggi e contatti
-    const interval = setInterval(() => {
-      refreshConversations();
-    }, 500); // Aggiornamento ogni mezzo secondo
+    // Refresh ottimizzato - più frequente quando attivo, più lento quando inattivo
+    let interval: NodeJS.Timeout;
+    let isPageVisible = true;
     
-    return () => clearInterval(interval);
+    const startRefresh = () => {
+      interval = setInterval(() => {
+        refreshConversations();
+      }, isPageVisible ? 2000 : 10000); // 2s se attivo, 10s se inattivo
+    };
+    
+    // Listener per visibilità pagina
+    const handleVisibilityChange = () => {
+      isPageVisible = !document.hidden;
+      clearInterval(interval);
+      startRefresh();
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startRefresh();
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      console.log('🧹 Cleanup refresh conversazioni completato');
+    };
   }, [user?.id]);
   const [userPresence, setUserPresence] = useState<Map<string, 'online' | 'offline' | 'in-your-chat'>>(new Map());
   const audioReceivedCallback = useRef<((audioData: string, senderId: string, senderUsername: string) => void) | null>(null);
@@ -63,6 +82,7 @@ export function useWebSocket() {
 
     ws.current.onopen = () => {
       setIsConnected(true);
+      console.log('🔌 WebSocket connesso, in attesa di autenticazione...');
     };
 
     ws.current.onmessage = (event) => {
@@ -71,6 +91,7 @@ export function useWebSocket() {
       
       switch (message.type) {
         case 'auth_success':
+          console.log('✅ WebSocket autenticazione completata');
           setUser(message.user);
           break;
           
@@ -137,17 +158,24 @@ export function useWebSocket() {
     };
 
     return () => {
-      ws.current?.close();
+      if (ws.current) {
+        console.log('🧹 Cleanup WebSocket - chiusura connessione');
+        ws.current.close();
+        ws.current = null;
+      }
     };
   }, []);
 
   const authenticate = (username: string, password: string) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
+      console.log('🔐 Invio autenticazione WebSocket per:', username);
       ws.current.send(JSON.stringify({ 
         type: 'auth', 
         username, 
         password 
       }));
+    } else {
+      console.error('❌ WebSocket non connesso per autenticazione, stato:', ws.current?.readyState);
     }
   };
 
@@ -168,12 +196,17 @@ export function useWebSocket() {
       console.log('✅ Messaggio inviato al server WebSocket');
       
       // Aggiungi il messaggio immediatamente alla lista locale per visibilità istantanea
+      if (!user?.id) {
+        console.error('❌ Errore: user.id è undefined, impossibile inviare messaggio');
+        return;
+      }
+      
       const immediateMessage = {
         id: `temp-${Date.now()}`,
         content,
-        userId: user?.id as string,
+        userId: user.id,
         recipientId,
-        username: user?.username || 'You',
+        username: user.username,
         timestamp: new Date(),
         isEncrypted: true,
         editedBy: null,
@@ -182,8 +215,6 @@ export function useWebSocket() {
         sessionId: null,
         messageKey: null
       };
-      
-      console.log('📱 Messaggio locale aggiunto per visibilità immediata');
       
       setMessages(prev => [...prev, immediateMessage]);
       console.log('📱 Messaggio aggiunto localmente per visibilità immediata');
@@ -191,12 +222,17 @@ export function useWebSocket() {
       console.error('❌ ERRORE - WebSocket non connesso, stato:', ws.current?.readyState);
       
       // Anche se il WebSocket non è connesso, mostra il messaggio localmente
+      if (!user?.id) {
+        console.error('❌ Errore: user.id è undefined, impossibile salvare messaggio locale');
+        return;
+      }
+      
       const localMessage = {
         id: `local-${Date.now()}`,
         content,
-        userId: user?.id as string,
+        userId: user.id,
         recipientId,
-        username: user?.username || 'You',
+        username: user.username,
         timestamp: new Date(),
         isEncrypted: true,
         editedBy: null,
@@ -205,8 +241,6 @@ export function useWebSocket() {
         sessionId: null,
         messageKey: null
       };
-      
-      console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');
       
       setMessages(prev => [...prev, localMessage]);
       console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');
