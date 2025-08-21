@@ -10,9 +10,10 @@ import Login from "@/pages/login";
 import Chat from "@/pages/chat";
 import Conversations from "@/pages/conversations";
 import Admin from "@/pages/admin";
+import MonitorSessions from "@/pages/monitor-sessions";
 import type { User } from "@shared/schema";
 
-type Screen = "login" | "conversations" | "chat" | "admin";
+type Screen = "login" | "conversations" | "chat" | "admin" | "monitor-sessions";
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("login");
@@ -156,6 +157,14 @@ function AppContent() {
         <Admin
           onLogout={handleLogout}
           onViewUser={handleViewUser}
+          onMonitorSessions={() => setCurrentScreen("monitor-sessions")}
+        />
+      )}
+      
+      {currentScreen === "monitor-sessions" && (
+        <MonitorSessions
+          onBack={() => setCurrentScreen("admin")}
+          onLogout={handleLogout}
         />
       )}
     </div>

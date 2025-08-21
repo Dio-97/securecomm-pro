@@ -534,6 +534,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin monitor all messages endpoint
+  app.get("/api/admin/monitor/messages", async (req, res) => {
+    try {
+      const allMessages = await storage.getAllMessages();
+      const users = await storage.getAllUsers();
+      
+      // Add admin user to the list for complete user mapping
+      const adminUsers = await storage.getUser("admin");
+      const allUsersIncludingAdmin = adminUsers ? [...users, adminUsers] : users;
+      
+      // Create user lookup map
+      const userMap = allUsersIncludingAdmin.reduce((acc, user) => {
+        acc[user.id] = user;
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Format messages with user info and sort by timestamp (most recent first)
+      const monitoredMessages = allMessages
+        .map(message => {
+          const sender = userMap[message.userId];
+          const recipient = userMap[message.recipientId];
+          
+          return {
+            id: message.id,
+            content: message.content,
+            senderId: message.userId,
+            senderUsername: sender?.username || 'Unknown',
+            recipientId: message.recipientId,
+            recipientUsername: recipient?.username || 'Unknown',
+            timestamp: message.timestamp,
+            isEncrypted: message.isEncrypted || true,
+            senderAvatar: sender?.avatar || null
+          };
+        })
+        .sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateB - dateA; // Most recent first
+        });
+
+      res.json(monitoredMessages);
+    } catch (error) {
+      console.error("Error fetching monitored messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
   // WebSocket connection handling
   // Send presence updates to all clients
   const broadcastPresenceUpdate = (userId: string, status: 'online' | 'offline') => {

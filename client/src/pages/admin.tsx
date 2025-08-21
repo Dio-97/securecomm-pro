@@ -23,6 +23,7 @@ interface AdminUser {
 interface AdminProps {
   onLogout: () => void;
   onViewUser: (username: string) => void;
+  onMonitorSessions: () => void;
 }
 
 interface CreateUserResponse {
@@ -33,7 +34,7 @@ interface CreateUserResponse {
   };
 }
 
-export default function Admin({ onLogout, onViewUser }: AdminProps) {
+export default function Admin({ onLogout, onViewUser, onMonitorSessions }: AdminProps) {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -239,7 +240,10 @@ export default function Admin({ onLogout, onViewUser }: AdminProps) {
                 <Shield className="w-4 h-4" />
                 <span>{createUserMutation.isPending ? "Creating..." : "Create Secure Account"}</span>
               </Button>
-              <Button className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700">
+              <Button 
+                onClick={onMonitorSessions}
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700"
+              >
                 <Eye className="w-4 h-4" />
                 <span>Monitor All Sessions</span>
               </Button>
