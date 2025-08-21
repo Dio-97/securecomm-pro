@@ -300,17 +300,21 @@ export function useWebSocket() {
       }
       
       // Cancella i messaggi localmente per questo utente
-      await fetch(`/api/conversations/${userId1}/${userId2}/clear`, {
+      console.log(`🔄 Chiamata endpoint CLEAR: /api/conversations/${userId1}/${userId2}/clear`);
+      const clearResponse = await fetch(`/api/conversations/${userId1}/${userId2}/clear`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: userId1 })
       });
+      console.log(`✅ Risposta endpoint CLEAR:`, clearResponse.status, clearResponse.statusText);
       
-      await fetch(`/api/conversations/${userId1}/${userId2}/leave`, {
+      console.log(`🔄 Chiamata endpoint LEAVE: /api/conversations/${userId1}/${userId2}/leave`);
+      const leaveResponse = await fetch(`/api/conversations/${userId1}/${userId2}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activeUserId: userId1 })
       });
+      console.log(`✅ Risposta endpoint LEAVE:`, leaveResponse.status, leaveResponse.statusText);
       
       // Svuota i messaggi nella UI immediatamente
       setMessages([]);
