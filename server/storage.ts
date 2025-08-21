@@ -37,6 +37,10 @@ export interface IStorage {
   joinConversation(userId: string, otherUserId: string, joinedUserId: string): void;
   leaveConversation(userId: string, otherUserId: string, leftUserId: string): Promise<void>;
   
+  // Temporary message management
+  clearUserMessages(userId: string, otherUserId: string): Promise<void>;
+  checkAndDestroyConversation(userId1: string, userId2: string): Promise<void>;
+  
   // Message management
   createMessage(message: { content: string; userId: string; recipientId: string; username: string }): Promise<Message>;
   getAllMessages(): Promise<Message[]>;
@@ -643,6 +647,29 @@ export class DatabaseStorage implements IStorage {
       );
       
       console.log(`🔥 Messaggi distrutti permanentemente tra ${userId1} e ${userId2}`);
+    }
+  }
+
+  // Implementazione dei metodi per messaggi temporanei
+  async clearUserMessages(userId: string, otherUserId: string): Promise<void> {
+    console.log(`🔄 Cancellazione messaggi per utente ${userId} dalla chat con ${otherUserId}`);
+    
+    // Marca la conversazione come cleared per questo utente
+    await this.markConversationAsCleared(userId, otherUserId);
+    
+    console.log(`✅ Messaggi cancellati localmente per ${userId}`);
+  }
+
+  async checkAndDestroyConversation(userId1: string, userId2: string): Promise<void> {
+    console.log(`🔍 Controllo distruzione conversazione tra ${userId1} e ${userId2}`);
+    
+    // Controlla se entrambi gli utenti hanno lasciato la chat
+    const conversationKey = [userId1, userId2].sort().join('-');
+    const activeUsers = this.activeConversations.get(conversationKey);
+    
+    if (!activeUsers || activeUsers.size === 0) {
+      console.log(`🔥 Entrambi gli utenti hanno lasciato la chat - distruggendo messaggi`);
+      await this.checkAndDestroyMessages(userId1, userId2);
     }
   }
 

@@ -234,10 +234,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId1, userId2 } = req.params;
       const { activeUserId } = req.body;
       
-      (storage as any).leaveConversation(userId1, userId2, activeUserId);
+      await storage.leaveConversation(userId1, userId2, activeUserId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to leave conversation" });
+    }
+  });
+
+  // Clear conversation messages for user (temporary message system)
+  app.post("/api/conversations/:userId1/:userId2/clear", async (req, res) => {
+    try {
+      const { userId1, userId2 } = req.params;
+      const { userId } = req.body;
+      
+      console.log(`🔄 Richiesta cancellazione messaggi per utente ${userId} dalla chat tra ${userId1} e ${userId2}`);
+      
+      // Cancella i messaggi per questo utente specifico
+      await storage.clearUserMessages(userId, userId === userId1 ? userId2 : userId1);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error clearing conversation messages:', error);
+      res.status(500).json({ message: "Failed to clear conversation messages" });
     }
   });
 
@@ -1064,7 +1082,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
           case 'leave_conversation':
             if (ws.userId && message.otherUserId) {
-              storage.leaveConversation(ws.userId, message.otherUserId, ws.userId);
+              console.log(`🚪 WebSocket: Utente ${ws.userId} esce dalla conversazione con ${message.otherUserId}`);
+              
+              // Cancella i messaggi per l'utente che esce e controlla la distruzione
+              await storage.clearUserMessages(ws.userId, message.otherUserId);
+              await storage.leaveConversation(ws.userId, message.otherUserId, ws.userId);
+              await storage.checkAndDestroyConversation(ws.userId, message.otherUserId);
             }
             break;
             

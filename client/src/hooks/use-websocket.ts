@@ -283,19 +283,33 @@ export function useWebSocket() {
 
   const leaveConversation = async (userId1: string, userId2: string) => {
     try {
+      console.log(`🚪 Uscita dalla conversazione: ${userId1} lascia chat con ${userId2}`);
+      
       // Send WebSocket message to leave conversation
       if (ws.current?.readyState === WebSocket.OPEN) {
         ws.current.send(JSON.stringify({ 
           type: 'leave_conversation', 
-          otherUserId: userId2 
+          otherUserId: userId2,
+          userId: userId1
         }));
       }
+      
+      // Cancella i messaggi localmente per questo utente
+      await fetch(`/api/conversations/${userId1}/${userId2}/clear`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId1 })
+      });
       
       await fetch(`/api/conversations/${userId1}/${userId2}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activeUserId: userId1 })
       });
+      
+      // Svuota i messaggi nella UI immediatamente
+      setMessages([]);
+      console.log(`✅ Messaggi cancellati localmente per ${userId1}`);
     } catch (error) {
       console.error('Failed to leave conversation:', error);
     }
