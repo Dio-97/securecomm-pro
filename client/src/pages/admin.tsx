@@ -141,13 +141,34 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
     setNewPassword("");
     setShowCredentialsEdit(true);
     
-    // Prevent auto-focus on mobile to avoid automatic keyboard opening
+    // Multiple strategies to prevent keyboard opening
     setTimeout(() => {
+      // Blur any active element
       const activeElement = document.activeElement as HTMLElement;
       if (activeElement && activeElement.blur) {
         activeElement.blur();
       }
-    }, 100);
+      
+      // Remove focus from all inputs in the dialog
+      const dialogInputs = document.querySelectorAll('input');
+      dialogInputs.forEach(input => {
+        input.blur();
+        input.setAttribute('readonly', 'true');
+        setTimeout(() => {
+          input.removeAttribute('readonly');
+        }, 300);
+      });
+    }, 0);
+    
+    // Additional timeout for stubborn mobile browsers
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#new-username, #new-password');
+      inputs.forEach(input => {
+        if (input instanceof HTMLInputElement) {
+          input.blur();
+        }
+      });
+    }, 50);
   };
 
   const handleSaveCredentials = () => {
@@ -355,6 +376,13 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 onChange={(e) => setNewUsername(e.target.value)}
                 placeholder="Inserisci nuovo username"
                 autoFocus={false}
+                autoComplete="off"
+                onFocus={(e) => {
+                  // Prevent focus if dialog just opened
+                  if (showCredentialsEdit) {
+                    setTimeout(() => e.target.blur(), 50);
+                  }
+                }}
               />
             </div>
             <div>
@@ -366,6 +394,13 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Lascia vuoto per non modificare"
                 autoFocus={false}
+                autoComplete="off"
+                onFocus={(e) => {
+                  // Prevent focus if dialog just opened
+                  if (showCredentialsEdit) {
+                    setTimeout(() => e.target.blur(), 50);
+                  }
+                }}
               />
             </div>
           </div>
