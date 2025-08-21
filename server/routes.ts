@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ottieni tutti gli utenti senza filtri per la ricerca
       const allUsers = await storage.getAllUsers();
       
-      // Filtra gli utenti che corrispondono alla query
+      // Filtra gli utenti che corrispondono alla query (inclusi admin)
       const filtered = allUsers.filter(user => 
         user.username.toLowerCase().includes(query.toLowerCase())
       ).map(user => ({

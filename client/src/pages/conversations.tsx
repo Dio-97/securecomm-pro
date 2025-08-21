@@ -809,13 +809,13 @@ export default function Conversations({ user, conversations, onSelectConversatio
         </div>
           
           {searchQuery.length >= 1 && (
-            <div className="mt-4 space-y-2 z-[9999] relative bg-card border rounded-lg shadow-lg p-2 max-h-64 overflow-y-auto"
+            <div className="search-results-overlay mt-4 space-y-2 p-2 max-h-64 overflow-y-auto"
                  style={{ 
-                   position: 'absolute',
-                   top: '100%',
-                   left: '0',
-                   right: '0',
-                   zIndex: 9999
+                   position: 'fixed',
+                   top: '140px',
+                   left: '1rem',
+                   right: '1rem',
+                   zIndex: 99999
                  }}>
               {searchLoading ? (
                 <div className="text-center text-muted-foreground py-4 flex items-center justify-center">
@@ -854,12 +854,12 @@ export default function Conversations({ user, conversations, onSelectConversatio
                     );
                   })}
                 </>
-              ) : searchQuery.length >= 1 ? (
+              ) : (
                 <div className="text-center text-muted-foreground py-4">
                   <div className="text-sm">Nessun utente trovato per "{searchQuery}"</div>
                   <div className="text-xs mt-1">Prova con un altro nome utente</div>
                 </div>
-              ) : null}
+              )}
             </div>
           )}
       </div>
