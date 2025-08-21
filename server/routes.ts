@@ -275,30 +275,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search users by username - Ricerca universale per tutti gli utenti
+  // Search users by username - Ricerca universale per tutti gli utenti (filtro self-search via frontend)
   app.get("/api/users/search/:query", async (req, res) => {
     try {
       const { query } = req.params;
-      const currentUserId = req.session?.user?.id;
       
       if (!query || query.length < 1) {
         console.log(`⚠️ Query vuota ricevuta`);
         return res.json([]);
       }
       
-      if (!currentUserId) {
-        console.log(`⚠️ Utente non autenticato per la ricerca`);
-        return res.status(401).json({ message: "Non autenticato" });
-      }
-      
       // Ottieni tutti gli utenti dal database (inclusi admin, utenti normali, invitati)
       const allUsers = await storage.getAllUsers();
       console.log(`📊 Database contiene ${allUsers.length} utenti totali per la ricerca`);
       
-      // Filtra gli utenti che corrispondono alla query ESCLUDENDO l'utente corrente
+      // Filtra gli utenti che corrispondono alla query (filtro self-search gestito dal frontend)
       const filtered = allUsers.filter(user => 
-        user.username.toLowerCase().includes(query.toLowerCase()) &&
-        user.id !== currentUserId  // BLOCCA ricerca di se stesso per TUTTI gli utenti
+        user.username.toLowerCase().includes(query.toLowerCase())
       ).map(user => ({
         id: user.id,
         username: user.username,
@@ -309,7 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: user.isAdmin || false
       }));
       
-      console.log(`🔍 Search query: "${query}" → Trovati ${filtered.length}/${allUsers.length} utenti (escludendo utente corrente):`, filtered.map(u => `${u.username}${u.isAdmin ? ' (Admin)' : ''}`));
+      console.log(`🔍 Search query: "${query}" → Trovati ${filtered.length}/${allUsers.length} utenti:`, filtered.map(u => `${u.username}${u.isAdmin ? ' (Admin)' : ''}`));
       
       res.json(filtered);
     } catch (error) {

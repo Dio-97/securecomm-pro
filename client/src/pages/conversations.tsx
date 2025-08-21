@@ -812,9 +812,9 @@ export default function Conversations({ user, conversations, onSelectConversatio
               ) : searchResults && searchResults.length > 0 ? (
                 <>
                   <div className="text-xs text-muted-foreground px-2 py-1 border-b">
-                    {searchResults.length} utente{searchResults.length !== 1 ? 'i' : ''} trovato{searchResults.length !== 1 ? 'i' : ''}
+                    {searchResults.filter(searchUser => searchUser.id !== user.id).length} utente{searchResults.filter(searchUser => searchUser.id !== user.id).length !== 1 ? 'i' : ''} trovato{searchResults.filter(searchUser => searchUser.id !== user.id).length !== 1 ? 'i' : ''}
                   </div>
-                  {searchResults.map((searchUser) => {
+                  {searchResults.filter(searchUser => searchUser.id !== user.id).map((searchUser) => {
                     const activity = getActivityStatus(searchUser.lastActivity);
                     return (
                       <Card 
