@@ -205,11 +205,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ).map(user => ({
         id: user.id,
         username: user.username,
-        initials: user.username.split(/[._\-]/).map(n => n[0]?.toUpperCase() || '').join('').slice(0, 2),
-        name: user.username.split(/[._\-]/).map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' '),
+        initials: user.username.length >= 2 ? user.username.slice(0, 2).toUpperCase() : user.username.toUpperCase(),
+        name: user.username.charAt(0).toUpperCase() + user.username.slice(1),
         lastActivity: user.lastActivity ? new Date(user.lastActivity).toLocaleString('it-IT') : "Mai",
         location: user.location || "📍 Sconosciuta"
       }));
+      
+      console.log(`Search query: "${query}", found ${filtered.length} users:`, filtered.map(u => u.username));
       
       res.json(filtered);
     } catch (error) {

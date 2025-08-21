@@ -334,7 +334,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
 
   const { data: searchResults = [], isLoading: searchLoading } = useQuery<SearchUser[]>({
     queryKey: ["/api/users/search", searchQuery],
-    enabled: searchQuery.length > 2,
+    enabled: searchQuery.length >= 1,
   });
 
   const handleStartConversation = async (userId: string, username: string) => {

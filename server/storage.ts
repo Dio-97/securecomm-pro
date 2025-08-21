@@ -335,7 +335,7 @@ export class DatabaseStorage implements IStorage {
     const conversations = new Map<string, { userId: string; username: string; lastMessage?: Message; unreadCount: number }>();
 
     // Per ogni ID utente trovato, ottieni i dettagli dell'utente e l'ultimo messaggio
-    for (const otherUserId of otherUserIds) {
+    for (const otherUserId of Array.from(otherUserIds)) {
       const otherUser = await this.getUser(otherUserId);
       if (!otherUser) continue;
 
