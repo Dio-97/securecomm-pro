@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/theme-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminUser {
@@ -29,6 +29,8 @@ interface AdminProps {
 export default function Admin({ onLogout, onViewUser, onMonitorSessions }: AdminProps) {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["/api/users"],
@@ -227,6 +229,7 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
               
               <Button 
                 onClick={async () => {
+                  setIsCreatingUser(true);
                   try {
                     const response = await fetch('/api/users/create', {
                       method: 'POST',
@@ -236,13 +239,15 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                     
                     if (response.ok) {
                       const result = await response.json();
+                      
+                      // Aggiorna la cache di React Query senza ricaricare la pagina
+                      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                      
                       toast({
                         title: "✅ Utente creato con successo!",
                         description: `Username: ${result.credentials.username}\nPassword: ${result.credentials.password}`,
                         duration: 8000,
                       });
-                      // Ricarica la lista utenti
-                      window.location.reload();
                     } else {
                       toast({
                         title: "❌ Errore",
@@ -257,12 +262,15 @@ export default function Admin({ onLogout, onViewUser, onMonitorSessions }: Admin
                       description: "Verifica la connessione e riprova",
                       variant: "destructive",
                     });
+                  } finally {
+                    setIsCreatingUser(false);
                   }
                 }}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700"
+                disabled={isCreatingUser}
+                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:opacity-50"
               >
-                <UserIcon className="w-4 h-4" />
-                <span>Crea Utente</span>
+                <UserIcon className={`w-4 h-4 ${isCreatingUser ? 'animate-spin' : ''}`} />
+                <span>{isCreatingUser ? 'Creando...' : 'Crea Utente'}</span>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
