@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, QrCode, Shield, FileUp, X, MessageCircle } from "lucide-react";
+import { Send, Paperclip, Settings, LogOut, User, Lock, ShieldQuestion, ArrowLeft, QrCode, Shield, FileUp, X, MessageCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -377,10 +377,40 @@ export default function Chat({
                 ✕
               </Button>
             </div>
+            
             <VPNStatus user={user} onVPNRotate={(newData) => {
               // Update user VPN data in parent component if needed
               console.log('VPN rotated:', newData);
             }} />
+            
+            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+              <div className="text-xs text-muted-foreground text-center mb-2">
+                🔄 Server cambia automaticamente ogni 15 min
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/vpn/rotate', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userId: user.id })
+                    });
+                    const newData = await response.json();
+                    console.log('Manual VPN rotation:', newData);
+                    // Trigger refresh of VPN status
+                    window.location.reload();
+                  } catch (error) {
+                    console.error('Failed to rotate VPN:', error);
+                  }
+                }}
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Cambia Server Ora
+              </Button>
+            </div>
           </div>
         </div>
       )}
