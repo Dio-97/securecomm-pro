@@ -1,12 +1,15 @@
 # Overview
 
-This is a real-time chat application built with React and Node.js, featuring secure messaging with end-to-end encryption, user authentication with 2FA, and admin functionality. The application uses WebSocket for real-time communication and implements a modern UI with shadcn/ui components and Tailwind CSS styling.
+SecureComm Pro - Una piattaforma di messaggistica istantanea sicura progettata per aziende di import/export oro con funzionalità avanzate di sicurezza, crittografia end-to-end, autenticazione 2FA e capacità di sorveglianza amministrativa. L'applicazione supporta fino a 20 utenti simultanei con aggiornamenti conversazioni in tempo reale e consegna messaggi istantanea.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 Language: Italian (primary communication)
 Auto-save conversations: All chat conversations opened through search are automatically saved for all users
+Message positioning: User's own messages on right (blue), received messages on left (gray)
+Keyboard behavior: Never close automatically when sending messages - stays open until user manually closes
+Ultra-fast refresh: Conversation list updates every 500ms for instant message visibility
 
 # System Architecture
 
