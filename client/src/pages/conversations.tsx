@@ -99,18 +99,27 @@ export default function Conversations({ user, conversations, onSelectConversatio
       const result = await response.json();
       
       if (result.isValid && result.data) {
-        // If it's a conversation verification QR, start that conversation
-        if (result.data.type === 'conversation_verification') {
+        // Handle different types of QR codes
+        if (result.data.type === 'user_identity') {
+          // User identity QR - start conversation with the user
+          await handleStartConversation(result.data.userId, result.data.username);
+          
+          // Show verification success message
+          console.log(`✓ Verified identity: ${result.data.username} (Device: ${result.data.deviceId.slice(0, 8)}...)`);
+          
+        } else if (result.data.type === 'conversation_verification') {
+          // Conversation verification QR
           const otherUserId = result.data.senderId === user.id ? result.data.recipientId : result.data.senderId;
           const otherUsername = result.data.senderId === user.id ? result.data.recipientUsername : result.data.senderUsername;
           
           await handleStartConversation(otherUserId, otherUsername);
+          
         } else if (result.data.userId && result.data.username) {
-          // If it's a user verification QR, start conversation with that user
+          // Legacy user verification QR
           await handleStartConversation(result.data.userId, result.data.username);
         }
       } else {
-        console.error('Invalid QR code');
+        console.error('Invalid QR code or verification failed');
       }
     } catch (error) {
       console.error('Failed to verify QR code:', error);
@@ -342,6 +351,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       {/* Security Panel */}
       <SecurityPanel 
         userId={user.id}
+        username={user.username}
         isVisible={showSecurityPanel}
         onClose={() => setShowSecurityPanel(false)}
       />

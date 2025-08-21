@@ -321,10 +321,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/qr/verify", (req, res) => {
     try {
       const { qrData } = req.body;
-      const result = qrService.verifyQRCode(qrData);
-      res.json(result);
+      
+      // Try to parse and determine QR type
+      const parsedData = JSON.parse(qrData);
+      
+      if (parsedData.type === 'user_identity') {
+        const result = qrService.verifyUserIdentityQR(qrData);
+        res.json(result);
+      } else if (parsedData.type === 'conversation_verification') {
+        // For conversation verification, we need additional context
+        const result = qrService.verifyQRCode(qrData);
+        res.json(result);
+      } else {
+        // Legacy QR verification
+        const result = qrService.verifyQRCode(qrData);
+        res.json(result);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to verify QR code" });
+    }
+  });
+
+  // Generate user identity QR code
+  app.post("/api/qr/generate-identity", async (req, res) => {
+    try {
+      const { userId, username, publicKey } = req.body;
+      
+      if (!userId || !username) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Generate a default public key if not provided
+      const key = publicKey || `pk_${userId}_${Date.now()}`;
+      
+      const qrCode = await qrService.generateUserIdentityQR(userId, username, key);
+      res.json({ qrCode, deviceId: key });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate identity QR code" });
     }
   });
 

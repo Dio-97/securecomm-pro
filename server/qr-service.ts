@@ -10,6 +10,17 @@ export interface QRVerificationData {
   signature: string;
 }
 
+export interface UserIdentityQRData {
+  type: 'user_identity';
+  userId: string;
+  username: string;
+  deviceId: string;
+  publicKey: string;
+  timestamp: number;
+  nonce: string;
+  signature: string;
+}
+
 export class QRService {
   private static instance: QRService;
   
@@ -68,6 +79,68 @@ export class QRService {
       const now = Date.now();
       const ageInMinutes = (now - data.timestamp) / (1000 * 60);
       if (ageInMinutes > 5) {
+        return { isValid: false };
+      }
+      
+      return { isValid: true, data };
+    } catch (error) {
+      return { isValid: false };
+    }
+  }
+
+  // Generate unique device identity QR for user
+  async generateUserIdentityQR(userId: string, username: string, publicKey: string): Promise<string> {
+    const timestamp = Date.now();
+    const deviceId = crypto.randomBytes(16).toString('hex');
+    const nonce = crypto.randomBytes(16).toString('hex');
+    
+    const identityData: UserIdentityQRData = {
+      type: 'user_identity',
+      userId,
+      username,
+      deviceId,
+      publicKey,
+      timestamp,
+      nonce,
+      signature: this.signData(`${userId}:${username}:${deviceId}:${publicKey}:${timestamp}:${nonce}`)
+    };
+
+    try {
+      const qrDataUrl = await QRCode.toDataURL(JSON.stringify(identityData), {
+        width: 300,
+        margin: 3,
+        color: {
+          dark: '#2563eb',
+          light: '#ffffff'
+        }
+      });
+      
+      return qrDataUrl;
+    } catch (error) {
+      console.error('Error generating user identity QR code:', error);
+      throw new Error('Failed to generate user identity QR code');
+    }
+  }
+
+  // Verify user identity QR code
+  verifyUserIdentityQR(qrData: string): { isValid: boolean; data?: UserIdentityQRData } {
+    try {
+      const data: UserIdentityQRData = JSON.parse(qrData);
+      
+      if (data.type !== 'user_identity') {
+        return { isValid: false };
+      }
+      
+      // Verify signature
+      const expectedSignature = this.signData(`${data.userId}:${data.username}:${data.deviceId}:${data.publicKey}:${data.timestamp}:${data.nonce}`);
+      if (data.signature !== expectedSignature) {
+        return { isValid: false };
+      }
+      
+      // Check timestamp (valid for 30 minutes for identity verification)
+      const now = Date.now();
+      const ageInMinutes = (now - data.timestamp) / (1000 * 60);
+      if (ageInMinutes > 30) {
         return { isValid: false };
       }
       
