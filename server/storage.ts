@@ -18,6 +18,7 @@ export interface IStorage {
   updateUsername(userId: string, username: string): Promise<boolean>;
   updateUserAvatar(userId: string, avatar: string): Promise<boolean>;
   updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean>;
+  promoteUserToAdmin(userId: string): Promise<boolean>;
   
   // Presence management
   setUserOnline(userId: string): Promise<void>;
@@ -185,6 +186,11 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserCredentials(userId: string, credentials: { username?: string; password?: string }): Promise<boolean> {
     const result = await db.update(users).set(credentials).where(eq(users.id, userId));
+    return result.rowCount! > 0;
+  }
+
+  async promoteUserToAdmin(userId: string): Promise<boolean> {
+    const result = await db.update(users).set({ isAdmin: true }).where(eq(users.id, userId));
     return result.rowCount! > 0;
   }
 
