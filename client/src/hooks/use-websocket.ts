@@ -171,9 +171,9 @@ export function useWebSocket() {
       const immediateMessage = {
         id: `temp-${Date.now()}`,
         content,
-        userId: user?.id || '',
+        userId: user?.id || 'current-user',
         recipientId,
-        username: user?.username || '',
+        username: user?.username || 'You',
         timestamp: new Date(),
         isEncrypted: true,
         editedBy: null,
@@ -182,6 +182,12 @@ export function useWebSocket() {
         sessionId: null,
         messageKey: null
       };
+      
+      console.log('📱 MESSAGGIO LOCALE CREATO:', {
+        messageUserId: immediateMessage.userId,
+        currentUserId: user?.id,
+        willBeOnRight: immediateMessage.userId === user?.id
+      });
       
       setMessages(prev => [...prev, immediateMessage]);
       console.log('📱 Messaggio aggiunto localmente per visibilità immediata');
@@ -192,9 +198,9 @@ export function useWebSocket() {
       const localMessage = {
         id: `local-${Date.now()}`,
         content,
-        userId: user?.id || '',
+        userId: user?.id || 'current-user',
         recipientId,
-        username: user?.username || '',
+        username: user?.username || 'You',
         timestamp: new Date(),
         isEncrypted: true,
         editedBy: null,
@@ -203,6 +209,12 @@ export function useWebSocket() {
         sessionId: null,
         messageKey: null
       };
+      
+      console.log('📱 MESSAGGIO OFFLINE CREATO:', {
+        messageUserId: localMessage.userId,
+        currentUserId: user?.id,
+        willBeOnRight: localMessage.userId === user?.id
+      });
       
       setMessages(prev => [...prev, localMessage]);
       console.log('📱 Messaggio salvato localmente (WebSocket disconnesso)');
