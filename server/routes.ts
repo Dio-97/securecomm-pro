@@ -30,7 +30,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket server for real-time messaging
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
-  const connectedClients = new Set<AuthenticatedWebSocket>();
+  const connectedClients = new Map<string, AuthenticatedWebSocket>();
+  const MAX_CONNECTIONS = 20;
   
   // Add health check endpoint
   app.get("/api/health", (req, res) => {
@@ -38,6 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       status: "ok", 
       websocket: {
         connected: connectedClients.size,
+        maxConnections: MAX_CONNECTIONS,
         port: httpServer.listening ? "active" : "inactive"
       }
     });
@@ -762,7 +764,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
     console.log('WebSocket connection established');
-    connectedClients.add(ws);
+    
+    // Check connection limit
+    if (connectedClients.size >= MAX_CONNECTIONS) {
+      ws.close(1013, "Server at capacity - maximum 20 users allowed");
+      console.log(`Connection rejected: Server at capacity (${connectedClients.size}/${MAX_CONNECTIONS})`);
+      return;
+    }
     
     ws.on('message', async (data) => {
       try {
@@ -775,6 +783,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ws.userId = user.id;
               ws.username = user.username;
               ws.isAdmin = user.isAdmin || false;
+              
+              // Add to connected clients map
+              connectedClients.set(user.id, ws);
+              
               await storage.setUserOnline(user.id);
               
               ws.send(JSON.stringify({ 
@@ -816,8 +828,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               
               // Send to sender and recipient only
-              const recipientClient = Array.from(connectedClients).find(client => client.userId === message.recipientId);
-              const senderClient = Array.from(connectedClients).find(client => client.userId === ws.userId);
+              const recipientClient = connectedClients.get(message.recipientId);
+              const senderClient = connectedClients.get(ws.userId);
               
               const messageData = { 
                 type: 'new_message', 
@@ -860,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'send_audio':
             if (ws.userId && message.recipientId && message.audioData) {
               // Invia audio al destinatario
-              const recipientClient = Array.from(connectedClients).find(client => client.userId === message.recipientId);
+              const recipientClient = connectedClients.get(message.recipientId);
               
               if (recipientClient && recipientClient.readyState === WebSocket.OPEN) {
                 recipientClient.send(JSON.stringify({ 
@@ -897,7 +909,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.setUserOffline(ws.userId);
         broadcastPresenceUpdate(ws.userId, 'offline');
       }
-      connectedClients.delete(ws);
+      if (ws.userId) {
+        connectedClients.delete(ws.userId);
+      }
       if (ws.username) {
         broadcastToClients({ 
           type: 'user_left', 

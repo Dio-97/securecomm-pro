@@ -442,7 +442,8 @@ export class DatabaseStorage implements IStorage {
       await this.markConversationAsCleared(leftUserId, otherUserId);
       
       // Se non ci sono più utenti attivi nella conversazione, controlla se distruggere i messaggi
-      if (this.activeConversations.get(conversationKey)!.size === 0) {
+      const conversationUsers = this.activeConversations.get(conversationKey);
+      if (conversationUsers && conversationUsers.size === 0) {
         await this.checkAndDestroyMessages(userId, otherUserId);
         this.activeConversations.delete(conversationKey);
       }
