@@ -608,7 +608,7 @@ export default function Conversations({ user, conversations, onSelectConversatio
       </div>
 
       {/* Security Panel Quick Access */}
-      <div className="border-b p-4">
+      <div className="border-b p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Shield className="w-4 h-4 text-green-500" />
@@ -626,7 +626,26 @@ export default function Conversations({ user, conversations, onSelectConversatio
           </Button>
         </div>
         
-        <div className="mt-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <span className="text-sm font-medium">Server VPN</span>
+            <span className="text-xs text-muted-foreground">({user.vpnCountry})</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSecurityPanel(true)}
+            className="text-xs"
+          >
+            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
+            Cambia Server
+          </Button>
+        </div>
+        
+        <div className="text-xs text-muted-foreground">
           VPN: {user.vpnCountry} • DNS Sicuro: Attivo • QR: Disponibile
         </div>
       </div>
